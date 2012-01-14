@@ -97,7 +97,7 @@
 
     // XXX: don't forget to disable this for releases.
     this.debug = function(msg) {
-        //dump("[nosquint] " + msg + "\n");
+        dump("[nosquint] " + msg + "\n");
     };
 
     /* This function is called a lot, so we take some care to optimize for the

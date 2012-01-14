@@ -54,11 +54,17 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
         gBrowser.tabContainer.addEventListener('TabClose', this.handleTabClose, false);
 
         this.zoomAll(null, true);
+        this.styleAll(null);
     };
 
     this.destroy = function() {
         if (NSQ.storage.dialogs.site)
             NSQ.storage.dialogs.site.die();
+
+        gBrowser.tabContainer.removeEventListener('TabOpen', this.handleTabOpen, false);
+        gBrowser.tabContainer.removeEventListener('TabSelect', this.handleTabSelect, false);
+        gBrowser.tabContainer.removeEventListener('TabClose', this.handleTabClose, false);
+        window.removeEventListener('DOMMouseScroll', this.handleMouseScroll, false); 
     };
 
 
@@ -264,8 +270,10 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
      * site name user data attached to the browser.
      */
     this.getSiteFromBrowser = function(browser) {
-        if (isChrome(browser))
+        if (isChrome(browser)) {
+            debug('getSiteFromBrowser(): isChrome=true, url=' + browser.docShell.document.URL);
             return null;
+        }
         return NSQ.prefs.getSiteFromURI(browser.currentURI);
     };
 
@@ -274,9 +282,11 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
      */
     this.getZoomForBrowser = function(browser) {
         var site = browser.getUserData('nosquint').site;
-        if (site === null) {
+        debug('getZoomForBrowser(): site=' + site);
+        if (site === undefined) {
             site = this.getSiteFromBrowser(browser);
             browser.getUserData('nosquint').site = site;
+            debug('getZoomForBrowser(): after getSiteFromBrowser(), site=' + site);
         }
 
         var [text, full] = NSQ.prefs.getZoomForSite(site);
@@ -303,6 +313,13 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
     this.attach = function(browser) {
         var listener = new NSQ.interfaces.ProgressListener(browser);
         browser.addProgressListener(listener, CI.nsIWebProgress.NOTIFY_STATE_DOCUMENT);
+        debug('attach(): attached browser URI=' + browser.docShell.document.URL);
+        function foo() {
+            debug('BROWSER URI: ' + browser.currentURI.spec);
+            setTimeout(foo, 1000);
+        }
+        //foo();
+
         var userData = {
             listener: listener,
             stylers: []

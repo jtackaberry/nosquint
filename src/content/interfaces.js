@@ -50,7 +50,7 @@ NoSquint.interfaces = NoSquint.ns(function() { with (NoSquint) {
                 // New document on the same site.
                 return;
 
-            debug("onLocationChange(): old=" + userData.site + "new=" + site + ", uri=" + uri.spec);
+            debug("onLocationChange(): old=" + userData.site + ", new=" + site + ", uri=" + uri.spec);
             /* Update timestamp for site.  This isn't _quite_ perfect because
              * the timestamp is only updated for the first page load on that site
              * rather than the last.  But it should be good enough in practice, and
@@ -102,7 +102,47 @@ NoSquint.interfaces = NoSquint.ns(function() { with (NoSquint) {
                     else
                         this.styleApplied = true;
                 }
+            } else if (state & Components.interfaces.nsIWebProgressListener.STATE_IS_DOCUMENT &&
+                       this.browser.getUserData('nosquint').site == null && !is30()) {
+                /* Kludge: when moving a tab from one window to another, the
+                 * listener previously created and attached in
+                 * NSQ.browser.attach() seems to either stop working or gets
+                 * implicitly detached somewhere afterward.  The tab gets
+                 * created initially as about:blank, so NoSquint thinks it's
+                 * chrome.  The tab gets updated for the proper site, but since
+                 * the listener isn't working, NoSquint doesn't hear about it.
+                 *
+                 * The specific magical incantation to deal with this seems to
+                 * be handling STATE_IS_DOCUMENT when site=null.  After a 0ms
+                 * timer, we try to readd the listener that was previously
+                 * added in NSQ.browser.attach().  If it fails, we assume the
+                 * listener from attach() is still there and everything is cool
+                 * after all.  Otherwise, regenerate the site name and
+                 * rezooms/style.
+                 *
+                 * This seems to solve the problem, but feels like a nasty volatile
+                 * hack to work around what is probably a firefox bug, and will
+                 * likely break in the future.  It doesn't seem to be necessary
+                 * with 3.0, but is with 3.5+.
+                 */
+                var browser = this.browser;
+                var listener = this;
+                setTimeout(function() {
+                    try {
+                        browser.addProgressListener(listener, CI.nsIWebProgress.NOTIFY_STATE_DOCUMENT);
+                    } catch (err) {
+                        // Assume ProgressListener was already attached after all, so
+                        // we don't need to do anything.
+                        return;
+                    }
+                    browser.getUserData('nosquint').listener = listener;
+                    // Forces getZoomForBrowser() (via zoom()) to redetermine site name.
+                    delete browser.getUserData('nosquint').site;
+                    NSQ.browser.zoom(browser);
+                    NSQ.browser.style(browser);
+                }, 0);
             }
+
         },
 
         onProgressChange: function() 0,
