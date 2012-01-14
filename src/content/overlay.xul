@@ -6,7 +6,7 @@
 
     <menupopup id="menu_ToolsPopup">
         <menuitem id="nosquint-menuitem" label="&nosquint;" oncommand="NoSquint.onMenuItemCommand(event);"
-                  insertbefore="devToolsSeparator" />
+                  insertafter="devToolsSeparator" />
     </menupopup>
 
 </overlay> 

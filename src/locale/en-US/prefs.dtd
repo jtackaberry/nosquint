@@ -1,4 +1,10 @@
-<!ENTITY title.label "NoSquint Options">
-<!ENTITY level.label "Default text zoom level:">
-<!ENTITY rememberDomains "Remember text zoom level per domain">
-<!ENTITY noRememberDomains "Use the default text zoom level for all domains">
+<!ENTITY ns.pref.title "NoSquint Settings">
+<!ENTITY ns.pref.level.label "Default text zoom level">
+<!ENTITY ns.pref.level.tip "The zoom level applied to all pages by default.  Modifying the text zoom when visiting a web page will override this value for that domain.">
+<!ENTITY ns.pref.globalbox.label "Global Options">
+<!ENTITY ns.pref.increment.label "Zoom increment">
+<!ENTITY ns.pref.increment.tip "You can change the text zoom for a page from the View menu or using one of the text zoom shortcuts (ctrl-plus/minus, or ctrl-mousewheel).  NoSquint will remember these changes.  This setting specifies what increment to use when changing the zoom level.">
+<!ENTITY ns.pref.domainbox.label "Domain Options">
+<!ENTITY ns.pref.rememberDomains "Remember text zoom level per domain">
+<!ENTITY ns.pref.noRememberDomains "Use the default text zoom level (set above) for all domains">
+<!ENTITY ns.pref.domainZoom.label "Zoom level for this domain">

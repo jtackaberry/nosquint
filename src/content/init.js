@@ -8,11 +8,12 @@ ZoomManager.prototype.getInstance().reset = function() {
 }
 
 ZoomManager.prototype.getInstance().enlarge = function() {
-    ZoomManager.prototype.getInstance().textZoom += 10;
+    // FIXME: do we want to update any other tabs of pages in this domain?
+    ZoomManager.prototype.getInstance().textZoom += NoSquint.zoomIncrement;
     NoSquint.saveCurrentZoom();
 }
 
 ZoomManager.prototype.getInstance().reduce = function() {
-    ZoomManager.prototype.getInstance().textZoom -= 10;
+    ZoomManager.prototype.getInstance().textZoom -= NoSquint.zoomIncrement;
     NoSquint.saveCurrentZoom();
 }

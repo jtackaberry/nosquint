@@ -1,23 +1,81 @@
 <?xml version="1.0"?>
 <?xml-stylesheet href="chrome://global/skin/global.css"  type="text/css"?>
+<?xml-stylesheet href="chrome://nosquint/content/prefs.css"  type="text/css"?>
 <!DOCTYPE window SYSTEM "chrome://nosquint/locale/prefs.dtd">
 
 <dialog xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-        title="&title.label;"
+        xmlns:html="http://www.w3.org/1999/xhtml"
+        title="&ns.pref.title;"
         buttons="accept,cancel" 
         ondialogaccept="NoSquint.savePrefs(document)"
         persist="screenX screenY"
         onload="NoSquint.initPrefsDialog(document)">
 
     <script src="nosquint.js" />
+    <script src="prefs.js" />
 
-    <hbox align="center">
-        <description flex="0">&level.label;</description>
-        <textbox id="defaultZoomLevel" size="5"/>
-        <description flex="0">%</description>
-    </hbox>
-    <radiogroup id="rememberDomains">
-        <radio label="&rememberDomains;" />
-        <radio label="&noRememberDomains;" />
-    </radiogroup>
+    <groupbox id="global">
+        <caption label="&ns.pref.globalbox.label;" />
+        <!-- XUL's grid container doesn't quite cut it. -->
+        <html:table cellspacing="0" cellpadding="0" border="0">
+            <html:tr>
+                <html:td align="right" style="white-space: nowrap;">
+                    <label>&ns.pref.level.label;:</label>
+                </html:td>
+                <html:td width="100%">
+                    <hbox align="center">
+                    <textbox id="defaultZoomLevel" size="5"/>
+                    <label class="percent">%</label>
+                    </hbox>
+                </html:td>
+            </html:tr>
+            <html:tr>
+                <html:td colspan="2" width="100%">
+                    <html:div class="tip">&ns.pref.level.tip;</html:div>
+                </html:td>
+            </html:tr>
+            <html:tr>
+                <html:td align="right" style="white-space: nowrap;">
+                    <label>&ns.pref.increment.label;:</label>
+                </html:td>
+                <html:td width="100%">
+                    <hbox align="center">
+                    <textbox id="zoomIncrement" size="5"/>
+                    <label class="percent">%</label>
+                    </hbox>
+                </html:td>
+            </html:tr>
+            <html:tr>
+                <html:td colspan="2" width="100%">
+                    <html:div class="tip">&ns.pref.increment.tip;</html:div>
+                </html:td>
+            </html:tr>
+        </html:table>
+    </groupbox>
+
+    <groupbox id="domain">
+        <caption label="&ns.pref.domainbox.label;" />
+        <radiogroup id="rememberDomains" onselect="domains_rb_select(document)">
+            <radio label="&ns.pref.noRememberDomains;" />
+            <radio label="&ns.pref.rememberDomains;" />
+        </radiogroup>
+        <grid id="domainZoom-grid" class="indent">
+            <columns>
+                <column />
+                <column />
+                <column />
+            </columns>
+            <rows>
+                <row align="center" id="domainZoom-box">
+                    <label disabled="true" id="domainZoom-label" value="&ns.pref.domainZoom.label;:" />
+                    <textbox disabled="true" id="domainZoom" size="5"/>
+                    <label disabled="true" class="percent">%</label>
+                </row>
+                <row>
+                    <label />
+                    <button  disabled="true" label="Use Default" id="domainZoom-button" onclick="domains_use_default(document)" />
+                </row>
+            </rows>
+        </grid>
+    </groupbox>
 </dialog>

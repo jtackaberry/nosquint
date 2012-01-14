@@ -1,3 +1,8 @@
+var SLDs = [ 
+    "ac.uk", "co.uk", "gov.uk", "ltd.uk", "me.uk", "mod.uk", "net.uk", 
+    "nic.uk", "nhs.uk", "org.uk", "plc.uk", "police.uk", "sch.uk"
+];
+
 var NoSquint = {
 
     prefs: null,
@@ -14,6 +19,7 @@ var NoSquint = {
     // Prefs
     domains: {},
     defaultZoomLevel: 120,
+    zoomIncrement: 10,
     rememberDomains: true,
     wheelZoomEnabled: true,
     wheelActionSave: -1,
@@ -51,7 +57,7 @@ var NoSquint = {
         NoSquint.listeners = [];
         // Unregister the event listeners setup during init.
         NoSquint.tabbrowser.removeEventListener("DOMNodeInserted", NoSquint.handleNewBrowser, false);
-        window.removeEventListener("DOMMouseScroll", NoSquint.handleScrollWheel, false);
+        //window.removeEventListener("DOMMouseScroll", NoSquint.handleScrollWheel, false);
     },
 
     handleScrollWheel: function(event) {
@@ -74,7 +80,14 @@ var NoSquint = {
     },
 
     getDomainFromHost: function(host) {
-        return host.replace(/^.*?([^.]*\.[^.]*$)/, "$1");
+        var domain = host.replace(/^.*?([^.]*\.[^.]*$)/, "$1");
+        // Check second-level domains list, if domain is one of these, then
+        // return third-level domain instead.
+        for (var n in SLDs) {
+            if (domain == SLDs[n])
+                return host.replace(/^.*?([^.]*\.[^.]*\.[^.]*$)/, "$1");
+        }
+        return domain;
     },
 
     handleNewBrowser: function(event) {
@@ -92,7 +105,15 @@ var NoSquint = {
         //alert("Create new listener");
         NoSquint.listeners[NoSquint.listeners.length] = listener;
         last.addProgressListener(listener, Components.interfaces.nsIWebProgress.NOTIFY_STATE_DOCUMENT);
-        //window.setTimeout(function() { NoSquint.zoom(last, null); }, 1);
+
+        /* Sometimes the onLocationChange handler of the ProgressListener will
+         * get fired, and sometimes it won't.  My best guess is this is a
+         * race condition, and the location sometimes gets changed before we
+         * attach the ProgressListener.  So we call NoSquint.zoom() on this
+         * browser explicitly for this initial page, rather than rely on the
+         * progress handler.
+         */
+        window.setTimeout(function() { NoSquint.zoom(last, null); }, 1);
     },
     
     handleRemoveBrowser: function(event) {
@@ -114,24 +135,16 @@ var NoSquint = {
     zoom: function(node, domain) {
         if (!node)
             return;
-
         if (domain == null && node.currentURI)
             domain = NoSquint.getDomainFromHost(node.currentURI.asciiHost);
 
-        try {
-            if (!domain)
-                throw "blah";
-            if (!NoSquint.domains[domain] || !NoSquint.rememberDomains)
-                level = NoSquint.defaultZoomLevel;
-            else
-                level = NoSquint.domains[domain];
+        if (!domain || !NoSquint.domains[domain] || !NoSquint.rememberDomains)
+            level = NoSquint.defaultZoomLevel;
+        else
+            level = NoSquint.domains[domain];
 
-            //alert("Set zoom for host: " + host + " -- " + level + " -- " + NoSquint.rememberDomains);
-            if (node.markupDocumentViewer.textZoom != level / 100.0)
-                node.markupDocumentViewer.textZoom = level / 100.0;
-        } catch(ex) {
-            window.setTimeout(function() { NoSquint.zoom(node, domain); }, 100);
-        }
+        //alert("Set zoom for host: " + node + " -- " + domain + " -- " + level + " -- " + NoSquint.rememberDomains + " -- " + node.markupDocumentViewer.textZoom);
+        node.markupDocumentViewer.textZoom = level / 100.0;
     },
 
     zoomAll: function() {
@@ -147,7 +160,14 @@ var NoSquint = {
     },
 
     onMenuItemCommand: function() {
-        window.openDialog("chrome://nosquint/content/prefs.xul", "", "chrome");
+        var browser = NoSquint.getCurrentBrowser();
+        var domain = NoSquint.getDomainFromHost(browser.currentURI.asciiHost);
+        var level;
+        if (domain && NoSquint.domains[domain])
+            level = NoSquint.domains[domain];
+        else
+            level = "default";
+        window.openDialog("chrome://nosquint/content/prefs.xul", "", "chrome", domain, level);
     },
 
     initPrefs: function() {
@@ -161,6 +181,8 @@ var NoSquint = {
 
         try { NoSquint.prefs.getIntPref("zoomlevel"); } 
         catch (err) { NoSquint.prefs.setIntPref("zoomlevel", NoSquint.defaultZoomLevel); }
+        try { NoSquint.prefs.getIntPref("zoomIncrement"); } 
+        catch (err) { NoSquint.prefs.setIntPref("zoomIncrement", NoSquint.zoomIncrement); }
 
         try { NoSquint.prefs.getCharPref("domains"); }
         catch (err) { NoSquint.prefs.setCharPref("domains", ""); }
@@ -187,16 +209,31 @@ var NoSquint = {
     initPrefsDialog: function(doc) {
         NoSquint.initPrefs();
         doc.getElementById("defaultZoomLevel").value = NoSquint.defaultZoomLevel;
-        doc.getElementById("rememberDomains").selectedIndex = NoSquint.rememberDomains ? 0 : 1;
-        //doc.getElementById("wheelZoomEnabled").checked = NoSquint.wheelZoomEnabled;
+        doc.getElementById("zoomIncrement").value = NoSquint.zoomIncrement;
+        doc.getElementById("rememberDomains").selectedIndex = NoSquint.rememberDomains ? 1 : 0;
     },
 
     savePrefs: function(doc) {
         if (doc) {
             NoSquint.prefs.setIntPref("zoomlevel", doc.getElementById("defaultZoomLevel").value);
-            var val = doc.getElementById("rememberDomains").selectedIndex == 0 ? true : false;
+            NoSquint.prefs.setIntPref("zoomIncrement", doc.getElementById("zoomIncrement").value);
+            var val = doc.getElementById("rememberDomains").selectedIndex == 0 ? false : true;
             NoSquint.prefs.setBoolPref("rememberDomains", val);
-            //NoSquint.prefs.setBoolPref("wheelZoomEnabled", doc.getElementById("wheelZoomEnabled").checked);
+            if (window.arguments && window.arguments[0]) {
+                var domain = window.arguments[0];
+                var level = doc.getElementById("domainZoom").value;
+                var domains = NoSquint.prefs.getCharPref("domains");
+                var re = new RegExp(domain + "\\b=\\d+\\b", "ig");
+                if (level == "default")
+                    domains = domains.replace(re, "");
+                else if (domains.search(domain + "=") != -1)
+                    domains = domains.replace(re, domain + "=" + level);
+                else
+                    domains += " " + domain + "=" + level;
+
+                domains = domains.replace(/ +/g, " ");
+                NoSquint.prefs.setCharPref("domains", domains);
+            }
             return;
         }
 
@@ -217,22 +254,26 @@ var NoSquint = {
             return;
         }
         NoSquint.defaultZoomLevel = NoSquint.prefs.getIntPref("zoomlevel");
+        NoSquint.zoomIncrement = NoSquint.prefs.getIntPref("zoomIncrement");
         NoSquint.wheelZoomEnabled = NoSquint.prefs.getBoolPref("wheelZoomEnabled");
         // TODO: if rememberDomains has been changed from false to true, iterate
         // over current browsers and remember current zoom levels for these windows.
         NoSquint.rememberDomains = NoSquint.prefs.getBoolPref("rememberDomains");
         var domainList = NoSquint.prefs.getCharPref("domains");
-        var domains = domainList.split(" ");
+        var domains = domainList.replace(/(^\s+|\s+$)/g, "").split(" ");
+        //var domains = domainList.split(" ");
         NoSquint.domains = {};
         for (var i = 0; i < domains.length; i++) {
             var domain = domains[i].split("=");
+            if (domain.length != 2)
+                continue; // malformed
             NoSquint.domains[domain[0]] = parseInt(domain[1]);
         }
         NoSquint.zoomAll();
     },
 
     locationChanged: function(browser, uri) {
-        NoSquint.zoom(browser, NoSquint.getDomainFromHost(uri.asciiHost));
+        window.setTimeout(function() { NoSquint.zoom(browser, NoSquint.getDomainFromHost(uri.asciiHost)); }, 1);
     },
 
     saveCurrentZoom: function() {

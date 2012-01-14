@@ -6,19 +6,20 @@
   
     <em:id>nosquint@urandom.ca</em:id>
     <em:name>No Squint</em:name>
-    <em:version>0.9.0</em:version>
+    <em:version>0.9.1</em:version>
     <em:description>Zooms text by user-configurable percentage</em:description>
     <em:creator>Jason Tackaberry</em:creator>
    
     <em:homepageURL>http://urandom.ca/nosquint/</em:homepageURL>
     <em:optionsURL>chrome://nosquint/content/prefs.xul</em:optionsURL>
+    <em:iconURL>chrome://nosquint/content/icon-32.png</em:iconURL>
 
     <!-- Firefox -->
     <em:targetApplication>
       <Description>
         <em:id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</em:id>
         <em:minVersion>1.5</em:minVersion>
-        <em:maxVersion>1.5.0.*</em:maxVersion>
+        <em:maxVersion>2.0b2</em:maxVersion>
       </Description>
     </em:targetApplication>
 
