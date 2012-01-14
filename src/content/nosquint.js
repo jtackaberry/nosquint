@@ -207,15 +207,9 @@ var NoSquint = {
 
     /* Handlers for toolar buttons */
     buttonEnlarge: function(event) {
-        var browser = getBrowser().mCurrentBrowser;
-        if (is_image(browser))
-            return browser._noSquintFit ? true : NoSquint.enlargeFullZoom();
         event.shiftKey ? NoSquint.cmdEnlargeSecondary() : NoSquint.cmdEnlargePrimary();
     },
     buttonReduce: function(event) {
-        var browser = getBrowser().mCurrentBrowser;
-        if (is_image(browser))
-            return browser._noSquintFit ? true : NoSquint.reduceFullZoom();
         event.shiftKey ? NoSquint.cmdReduceSecondary() : NoSquint.cmdReducePrimary();
     },
     buttonReset: function(event) {
@@ -253,25 +247,37 @@ var NoSquint = {
     },
 
     enlargeTextZoom: function() {
-        var mdv = getBrowser().mCurrentBrowser.markupDocumentViewer;
+        var browser = getBrowser().mCurrentBrowser;
+        if (is_image(browser))
+            return NoSquint.enlargeFullZoom();
+        var mdv = browser.markupDocumentViewer;
         mdv.textZoom = Math.round(mdv.textZoom * 100.0 + NoSquint.zoomIncrement) / 100.0;
         NoSquint.saveCurrentZoom();
         NoSquint.updateStatus();
     },
     reduceTextZoom: function() {
-        var mdv = getBrowser().mCurrentBrowser.markupDocumentViewer;
+        var browser = getBrowser().mCurrentBrowser;
+        if (is_image(browser))
+            return NoSquint.reduceFullZoom();
+        var mdv = browser.markupDocumentViewer;
         mdv.textZoom = Math.round(mdv.textZoom * 100.0 - NoSquint.zoomIncrement) / 100.0;
         NoSquint.saveCurrentZoom();
         NoSquint.updateStatus();
     },
     enlargeFullZoom: function() {
-        var mdv = getBrowser().mCurrentBrowser.markupDocumentViewer;
+        var browser = getBrowser().mCurrentBrowser;
+        if (is_image(browser) && browser._noSquintFit)
+            return;
+        var mdv = browser.markupDocumentViewer;
         mdv.fullZoom = Math.round(mdv.fullZoom * 100.0 + NoSquint.zoomIncrement) / 100.0;
         NoSquint.saveCurrentZoom();
         NoSquint.updateStatus();
     },
     reduceFullZoom: function() {
-        var mdv = getBrowser().mCurrentBrowser.markupDocumentViewer;
+        var browser = getBrowser().mCurrentBrowser;
+        if (is_image(browser) && browser._noSquintFit)
+            return;
+        var mdv = browser.markupDocumentViewer;
         mdv.fullZoom = Math.round(mdv.fullZoom * 100.0 - NoSquint.zoomIncrement) / 100.0;
         NoSquint.saveCurrentZoom();
         NoSquint.updateStatus();
@@ -885,13 +891,16 @@ var NoSquint = {
 
         if (is_image(browser)) {
             if (doc.body.firstChild) {
-                browser._noSquintFit = false;
-                NoSquint.adjustImage(null, browser, NoSquint.zoomImages ? undefined : -1);
                 var img = doc.body.firstChild;
-                img.addEventListener("click", function(event) { 
-                    if (event.button == 0)
-                        return NoSquint.adjustImage(event, browser);
-                }, true);
+                if (img._noSquintAttached == undefined) {
+                    browser._noSquintFit = false;
+                    NoSquint.adjustImage(null, browser, NoSquint.zoomImages ? undefined : -1);
+                    img.addEventListener("click", function(event) { 
+                        if (event.button == 0)
+                            return NoSquint.adjustImage(event, browser);
+                    }, true);
+                    img._noSquintAttached = true;
+                }
             }
             return;
         }
@@ -1426,6 +1435,7 @@ ProgressListener.prototype.onLocationChange = function(progress, request, uri) {
 ProgressListener.prototype.onStateChange = function(progress, request, state, astatus) {
     //debug("LISTENER: request=" + request + ", state=" + state + ", status=" + astatus);
     //debug("STATE CHANGE: " + this.browser.docShell.document.contentType);
+    //test for bf: state & Components.interfaces.nsIWebProgressListener.STATE_RESTORING
 
     /* Check the current content type against the content type we initially got.
      * This changes in the case when there's an error page (e.g. dns failure),
