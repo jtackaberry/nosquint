@@ -1,0 +1,5 @@
+<!ENTITY ns.pref.title "NoSquint Site Settings">
+
+<!ENTITY ns.pref.fullZoom.label "Full zoom level">
+<!ENTITY ns.pref.textZoom.label "Text zoom level">
+<!ENTITY ns.pref.button.useDefault.label "Use Default">

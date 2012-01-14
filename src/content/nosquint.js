@@ -1,3 +1,5 @@
+// chrome://browser/content/browser.xul
+// open dialogs will raise if already open
 function readLines(aURL) {
   var ioService = Components.classes["@mozilla.org/network/io-service;1"]
                   .getService(Components.interfaces.nsIIOService);
@@ -13,18 +15,25 @@ function readLines(aURL) {
   return str.split("\n");
 } 
 
+function debug(msg) {
+    dump("[nosquint] " + msg + "\n");
+}
+
 var NoSquint = {
 
-    TLDs: null,         // Hash of multi-level TLDs; shared between windows
-    prefs: null,        // Prefs service rooted at extensions.nosquint.
-    mousePrefs: null,   // Prefers service rooted at mousewheel.withcontrolkey.
-    initialized: false, // True when init() was called
-    prefsRecursion: 0,  // Recursion level in observe()
-    saveTimer: null,    // Timer for saveSiteList()
-    zoomAllTimer: null, // Timer for zoomAll()
-    pruneTimer: null,   // Timer for pruneSites()
-    sitesDirty: false,  // True when sites list needs saving
+    TLDs: null,                     // Hash of multi-level TLDs; shared between windows
+    prefs: null,                    // Prefs service rooted at extensions.nosquint.
+    mousePrefs: null,               // Prefers service rooted at mousewheel.withcontrolkey.
+    initialized: false,             // True when init() was called
+    prefsRecursion: 0,              // Recursion level in observe()
+    saveTimer: null,                // Timer for saveSiteList()
+    zoomAllTimer: null,             // Timer for zoomAll()
+    pruneTimer: null,               // Timer for pruneSites()
+    sitesDirty: false,              // True when sites list needs saving
     ignoreNextSitesChange: false,
+    zoomManagerTimeout: null,
+    globalDialog: null,
+    siteDialog: null,
 
     /* Prefs */
 
@@ -38,11 +47,15 @@ var NoSquint = {
     wheelZoomEnabled: false,
     hideStatus: false,
     forgetMonths: 6,
+    fullZoomPrimary: false,
 
 
     init: function() {
+        debug("start init");
+        NoSquint.updateZoomMenu();
         if (NoSquint.initialized)
             return;
+        NoSquint.initialized = true;
 
         var t0 = new Date().getTime();
 
@@ -71,29 +84,27 @@ var NoSquint = {
                 NoSquint.TLDs[lines[i]] = true;
         }
 
-
         NoSquint.initPrefs();
 
         window.addEventListener("DOMMouseScroll", NoSquint.handleScrollWheel, false); 
         gBrowser.tabContainer.addEventListener("TabOpen", NoSquint.handleNewTab, false);
         gBrowser.tabContainer.addEventListener("TabClose", NoSquint.handleCloseTab, false);
+        gBrowser.tabContainer.addEventListener("TabSelect", NoSquint.handleTabChanged, false);
 
-        NoSquint.initialized = true;
         // Zoom any tabs anther extension may have opened and attach listeners to them.
         NoSquint.zoomAll(true);
 
         var t1 = new Date().getTime();
-        dump("NoSquint: initialization took " + (t1-t0) + " ms\n");
+        debug("initialization took " + (t1-t0) + " ms");
     },
 
     destroy: function() {
-        var pbi = NoSquint.prefs.QueryInterface(Components.interfaces.nsIPrefBranchInternal);
-        pbi.removeObserver("", this);
-        pbi = NoSquint.mousePrefs.QueryInterface(Components.interfaces.nsIPrefBranchInternal);
-        pbi.removeObserver("", this);
+        NoSquint.prefs.removeObserver("", NoSquint);
+        NoSquint.mousePrefs.removeObserver("", NoSquint);
 
-        if (NoSquint.sitesDirty)
+        if (NoSquint.sitesDirty) {
             NoSquint._saveSiteListTimer();
+        }
 
         /* Even though we've removed the pref observers, they lamely still get
          * invoked during setIntPref below; setting prefs to null here prevents
@@ -102,12 +113,247 @@ var NoSquint = {
         NoSquint.prefs = null;
         // Restore mousewheel.withcontrolkey.action to default if wheel zoom enabled.
         if (NoSquint.mousePrefs && NoSquint.wheelZoomEnabled && NoSquint.mousePrefs.getIntPref("action") == 0)
-            NoSquint.mousePrefs.setIntPref("action", 3);
+            NoSquint.mousePrefs.setIntPref("action", 5);
 
         gBrowser.tabContainer.removeEventListener("TabOpen", NoSquint.handleNewTab, false);
         gBrowser.tabContainer.removeEventListener("TabClose", NoSquint.handleCloseTab, false);
         gBrowser.tabContainer.removeEventListener("TabSelect", NoSquint.handleTabChanged, false);
     },
+
+    updateZoomMenu: function() {
+        var bundle = document.getElementById("nosquint-overlay-bundle");
+        var popup = document.getElementById('viewFullZoomMenu').childNodes[0];
+        var full_zoom_primary = NoSquint.fullZoomPrimary;
+        var toggle_zoom = null;
+
+        if (!NoSquint.initialized) {
+            for (var i = 0; i < popup.childNodes.length; i++) {
+                var child = popup.childNodes[i];
+                if (child.id == 'toggle_zoom')
+                    toggle_zoom = child;
+                if (child.nodeName != 'menuitem' || (child.command != 'cmd_fullZoomEnlarge' && 
+                    child.command != 'cmd_fullZoomReduce'))
+                    continue;
+
+                var icon = document.defaultView.getComputedStyle(child, null).getPropertyValue('list-style-image');
+                var enlarge = child.command == 'cmd_fullZoomEnlarge';
+                var item = document.createElement('menuitem');
+                var suffix = "noSquint" + (enlarge ? "Enlarge" : "Reduce") + "Secondary";
+                item.setAttribute("command",  "cmd_" + suffix);
+                item.setAttribute("key",  "key_" + suffix);
+                item.style.listStyleImage = icon;
+                popup.insertBefore(item, popup.childNodes[i + 2]);
+                if (0 && icon) {
+                    // Override toolbar icon to use platform-native enlarge icon
+                    var button = document.getElementById("nosquint-button-" + (enlarge ? "enlarge" : "reduce"));
+                    if (button)
+                        button.style.listStyleImage = icon.replace(/menu/, 'toolbar');
+                    if (enlarge) {
+                        document.getElementById('nosquint-status').src =  icon.replace(/url\((.*)\)/, "$1");
+                    }
+                }
+            }
+            var item = document.createElement('menuitem');
+            item.setAttribute('command', 'cmd_noSquintPrefs');
+            item.setAttribute('label', bundle.getString('zoomMenuSettings'));
+            if (toggle_zoom)
+                popup.replaceChild(item, toggle_zoom);
+            else {
+                popup.appendChild(document.createElement('menuseparator'));
+                popup.appendChild(item);
+            }
+        }
+
+        for (var i = 0; i < popup.childNodes.length; i++) {
+            var child = popup.childNodes[i];
+            if (child.nodeName != 'menuitem')
+                continue;
+            var command = child.getAttribute('command');
+            if (command == "cmd_fullZoomEnlarge")
+                child.setAttribute('label', bundle.getString('zoomMenuIn' + (full_zoom_primary ? "Full" : "Text")));
+            else if (command == "cmd_noSquintEnlargeSecondary")
+                child.setAttribute('label', bundle.getString('zoomMenuIn' + (full_zoom_primary ? "Text" : "Full")));
+            if (command == "cmd_fullZoomReduce")
+                child.setAttribute('label', bundle.getString('zoomMenuOut' + (full_zoom_primary ? "Full" : "Text")));
+            else if (command == "cmd_noSquintReduceSecondary")
+                child.setAttribute('label', bundle.getString('zoomMenuOut' + (full_zoom_primary ? "Text" : "Full")));
+        }
+    },
+
+    cmdEnlargePrimary: function() {
+        NoSquint.fullZoomPrimary ? NoSquint.enlargeFullZoom() : NoSquint.enlargeTextZoom();
+    },
+    cmdReducePrimary: function() {
+        NoSquint.fullZoomPrimary ? NoSquint.reduceFullZoom() : NoSquint.reduceTextZoom();
+    },
+    cmdEnlargeSecondary: function() {
+        NoSquint.fullZoomPrimary ? NoSquint.enlargeTextZoom() : NoSquint.enlargeFullZoom();
+    },
+    cmdReduceSecondary: function() {
+        NoSquint.fullZoomPrimary ? NoSquint.reduceTextZoom() : NoSquint.reduceFullZoom();
+    },
+    cmdReset: function() {
+        var text_zoom_default = NoSquint.getZoomDefaults()[0];
+        var viewer = getBrowser().mCurrentBrowser.markupDocumentViewer;
+        if (Math.round(viewer.textZoom * 100.0) != text_zoom_default)
+            viewer.textZoom = text_zoom_default / 100.0;
+        if (!ZoomManager.reset()) {
+            NoSquint.saveCurrentZoom();
+            NoSquint.updateStatus();
+        }
+    },
+    buttonEnlarge: function(event) {
+        event.shiftKey ? NoSquint.cmdEnlargeSecondary() : NoSquint.cmdEnlargePrimary();
+    },
+    buttonReduce: function(event) {
+        event.shiftKey ? NoSquint.cmdReduceSecondary() : NoSquint.cmdReducePrimary();
+    },
+    enlargeTextZoom: function() {
+        getBrowser().mCurrentBrowser.markupDocumentViewer.textZoom += (NoSquint.zoomIncrement / 100.0);
+        NoSquint.saveCurrentZoom();
+        NoSquint.updateStatus();
+    },
+    reduceTextZoom: function() {
+        getBrowser().mCurrentBrowser.markupDocumentViewer.textZoom -= (NoSquint.zoomIncrement / 100.0);
+        NoSquint.saveCurrentZoom();
+        NoSquint.updateStatus();
+    },
+    enlargeFullZoom: function() {
+        ZoomManager.enlarge();
+    },
+    reduceFullZoom: function() {
+        ZoomManager.reduce();
+    },
+
+    popupItemSelect: function(event) {
+        var item = event.target;
+        var label = item.label;
+        if (label.search(/%$/) != -1) {
+            var level = parseInt(label.replace(/%/, ''));
+            var browser = gBrowser.selectedBrowser;
+            if (item.getAttribute('name') == 'text')
+                NoSquint.zoom(browser, level, false);
+            else
+                NoSquint.zoom(browser, false, level);
+            NoSquint.saveCurrentZoom();
+        }
+    },
+
+    statusPanelClick: function(event) {
+        if (event.button == 0)
+            return NoSquint.openSitePrefsDialog();
+
+        var popup = document.getElementById("nosquint-status-popup");
+        var browser = gBrowser.selectedBrowser;
+
+        // Hide all but the last menuitem if there is no site
+        for (var i = 0; i < popup.childNodes.length - 1; i++)
+            popup.childNodes[i].style.display = browser._noSquintSite ? '' : 'none';
+
+        var popup_text = document.getElementById("nosquint-status-popup-text");
+        var popup_full = document.getElementById("nosquint-status-popup-full");
+
+        var current_text = Math.round(browser.markupDocumentViewer.textZoom * 100);
+        var current_full = Math.round(browser.markupDocumentViewer.fullZoom * 100);
+
+        popup.childNodes[0].label = browser._noSquintSite;
+
+        for (var i = 0; i < popup_text.childNodes.length; i++) {
+            var child = popup_text.childNodes[i];
+            child.setAttribute('checked', child.label.replace(/%/, '') == current_text);
+        }
+        for (var i = 0; i < popup_full.childNodes.length; i++) {
+            var child = popup_full.childNodes[i];
+            child.setAttribute('checked', child.label.replace(/%/, '') == current_full);
+        }
+
+        popup.openPopupAtScreen(event.screenX, event.screenY, true);
+    },
+
+    openSitePrefsDialog: function() {
+        var browser = gBrowser.selectedBrowser;
+        var site = NoSquint.getSiteFromURI(browser.currentURI);
+        if (!site)
+            return;
+        if (NoSquint.siteDialog) {
+            NoSquint.siteDialog.setValues(browser, site);
+            return NoSquint.siteDialog.dialog.focus();
+        }
+        if (NoSquint.sitesDirty)
+            NoSquint._saveSiteListTimer();
+        window.openDialog("chrome://nosquint/content/siteprefs.xul", "NoSquint Site Settings", "chrome", 
+                          NoSquint, browser, site);
+    },
+
+
+    openGlobalPrefsDialog: function() {
+        if (NoSquint.globalDialog)
+            return NoSquint.globalDialog.dialog.focus();
+
+        if (NoSquint.sitesDirty)
+            NoSquint._saveSiteListTimer();
+        var browser = gBrowser.selectedBrowser;
+        var site = NoSquint.getSiteFromURI(browser.currentURI);
+        var level = NoSquint.getLevelForSite(site)[0] || "default";
+        var url = browser.currentURI.asciiHost + browser.currentURI.path;
+        window.openDialog("chrome://nosquint/content/globalprefs.xul", "NoSquint Settings", "chrome", 
+                          site, level, url, NoSquint);
+    },
+
+
+    handleScrollWheel: function(event) {
+        if (!event.ctrlKey || !NoSquint.wheelZoomEnabled)
+            return;
+        var browser = gBrowser.selectedBrowser;
+        var text = full = false;
+        var increment = NoSquint.zoomIncrement * (event.detail < 0 ? -1 : 1);
+        if (NoSquint.fullZoomPrimary && !event.shiftKey || !NoSquint.fullZoomPrimary && event.shiftKey)
+            full = (browser.markupDocumentViewer.fullZoom * 100) + increment;
+        else
+            text = (browser.markupDocumentViewer.textZoom * 100) + increment;
+        var current = Math.round(browser.markupDocumentViewer.textZoom * 100);
+        NoSquint.zoom(browser, text, full);
+        NoSquint.saveCurrentZoom();
+
+        event.stopPropagation();
+        event.preventDefault();
+    },
+
+
+    handleTabChanged: function(event) {
+        if (gBrowser.selectedBrowser._noSquintified) {
+            // ZoomManager.fullZoom was set somewhere internally in FF.  Abort
+            // the pending zoom.
+            NoSquint.abortPendingZoomManager();
+            NoSquint.updateStatus();
+        }
+    },
+
+    handleNewTab: function(event) {
+        NoSquint.attach(event.target.linkedBrowser);
+    },
+
+    handleCloseTab: function(event) {
+        var browser = event.target.linkedBrowser;
+        browser.removeProgressListener(browser._noSquintListener);
+    },
+
+    /* In init.js, we hook the setter for ZoomManager.zoom to have it
+     * queue the requested zoom rather than apply it immediately.  This
+     * gives handleTabChanged() above and our custom ProgressListener an
+     * opportunity to abort the pending zoom, in order to fully bypass
+     * FF's new internal per-site zoom mechanism.
+     */
+    abortPendingZoomManager: function() {
+        debug("aborting pending ZoomManager zoom");
+        if (NoSquint.zoomManagerTimeout != null) {
+            clearTimeout(NoSquint.zoomManagerTimeout);
+            NoSquint.zoomManagerTimeout = null;
+            ZoomManager._nosquintPendingZoom = null;
+        } else
+            NoSquint.zoomManagerTimeout = false;
+    },
+
 
     getBaseDomainFromHost: function(host) {
         if (host.match(/^[\d.]+$/) != null)
@@ -177,7 +423,9 @@ var NoSquint = {
 
 
     getSiteFromURI: function(URI) {
-        //var t0 = new Date().getTime();
+        var t0 = new Date().getTime();
+        if (!URI)
+            return null;
 
         var uri_host = URI.asciiHost;
         var uri_path = URI.path;
@@ -203,13 +451,13 @@ var NoSquint = {
             if (cur_weight < match_weight)
                 continue;
 
-            site_host = m1[1].replace(new RegExp(re_host), sub_host);
-            site_path = m2[1].replace(new RegExp(re_path), sub_path);
+            var site_host = m1[1].replace(new RegExp(re_host), sub_host);
+            var site_path = m2[1].replace(new RegExp(re_path), sub_path);
             match = site_host + site_path;
             match_weight = cur_weight;
         }
-        //var t1 = new Date().getTime();
-        //dump("NoSquint: getSiteFromURI took " + (t1-t0) + " ms\n");
+        var t1 = new Date().getTime();
+        debug("getSiteFromURI took " + (t1-t0) + " ms");
 
         if (match)
             return match;
@@ -217,38 +465,11 @@ var NoSquint = {
     },
 
 
-    handleScrollWheel: function(event) {
-        if (!event.ctrlKey || !NoSquint.wheelZoomEnabled)
-            return;
-        //alert(event.detail + ' -- target -- ' + event.target.nodeName);
-        if (event.detail < 0)
-            ZoomManager.prototype.getInstance().reduce();
-        else if (event.detail > 0)
-            ZoomManager.prototype.getInstance().enlarge();
-
-        event.stopPropagation();
-        event.preventDefault();
-    },
-
-
-    handleTabChanged: function(event) {
-        if (gBrowser.selectedBrowser._noSquintified)
-            NoSquint.updateStatus();
-    },
-
-    handleNewTab: function(event) {
-        NoSquint.attach(event.target.linkedBrowser);
-    },
-
-    handleCloseTab: function(event) {
-        var browser = event.target.linkedBrowser;
-        browser.removeProgressListener(browser._noSquintListener);
-    },
-
     attach: function(browser) {
         var listener = new ProgressListener(browser);
         browser.addProgressListener(listener, Components.interfaces.nsIWebProgress.NOTIFY_STATE_DOCUMENT);
         browser._noSquintListener = listener;
+        NoSquint.zoom(browser, null, null);
         //alert("Create new listener");
 
         /* Sometimes the onLocationChange handler of the ProgressListener will
@@ -258,82 +479,108 @@ var NoSquint = {
          * browser explicitly for this initial page, rather than rely on the
          * progress handler.
          */
-        setTimeout(function() { NoSquint.zoom(browser, null); }, 1);
+        // XXX: is this still needed (for iframes)?
+        //setTimeout(function() { NoSquint.zoom(browser, null); }, 1);
     },
     
     updateStatus: function() {
         if (NoSquint.hideStatus)
             return;
         var browser = gBrowser.selectedBrowser;
-        var level = Math.round(browser.markupDocumentViewer.textZoom * 100);
-        var label = level + "%";
-        if (browser._noSquintSite)
-            label += " (" + browser._noSquintSite + ")";
-        document.getElementById('nosquint-status').label = label;
+        var text = Math.round(browser.markupDocumentViewer.textZoom * 100);
+        var full = Math.round(browser.markupDocumentViewer.fullZoom * 100);
+        var [ text_default, full_default ] = NoSquint.getZoomDefaults();
+
+        //text += (text == text_default) ? "% (default)" : "%";
+        //full += (full == full_default) ? "% (default)" : "%";
+
+        var e = document.getElementById('nosquint-status')
+        if (NoSquint.fullZoomPrimary)
+            e.label = full + "%" + (text == text_default ? "" : (" / " + text + "%"));
+        else
+            e.label = text + "%" + (full == full_default ? "" : (" / " + full + "%"));
+
+        var site = browser._noSquintSite ? browser._noSquintSite : "(none)";
+        document.getElementById("nosquint-status-tooltip-site").value = site;
+        document.getElementById("nosquint-status-tooltip-full").value = full + "%";
+        document.getElementById("nosquint-status-tooltip-text").value = text + "%";
     },
 
+    // Returns array [text_size, full_size]
     getLevelForSite: function(site) {
         if (!site)
-            return null;
+            return [null, null];
 
         if (NoSquint.sites[site])
-            return NoSquint.sites[site][0];
-        return null;
+            return [NoSquint.sites[site][0], NoSquint.sites[site][3]];
+        return [null, null];
+    },
+
+    getZoomDefaults: function() {
+        return [ NoSquint.fullZoomPrimary ? 100 : NoSquint.defaultZoomLevel,
+                 NoSquint.fullZoomPrimary ? NoSquint.defaultZoomLevel : 100 ];
     },
 
     getLevelForBrowser: function(browser) {
         if (!browser._noSquintSite)
             browser._noSquintSite = NoSquint.getSiteFromURI(browser.currentURI);
 
+        var [ text_default, full_default ] = NoSquint.getZoomDefaults();
+
         if (NoSquint.rememberSites) {
             var site = browser._noSquintSite;
-            var level = NoSquint.getLevelForSite(site);
-            if (level != null)
-                return level;
+            var [ text, full ] = NoSquint.getLevelForSite(site);
+            return [ text || text_default, full || full_default ];
         }
-        return NoSquint.defaultZoomLevel;
+        return [ text_default, full_default ];
     },
 
-    zoom: function(browser, level) {
-        if (!browser)
-            return;
-        if (level == null)
-            level = NoSquint.getLevelForBrowser(browser);
 
-        browser.markupDocumentViewer.textZoom = level / 100.0;
+    /* Zooms text and/or full zoom to the specified level.  If text or full is
+     * null, the default for browser is used.  If it is false, it is
+     * untouched.  Status bar is updated, but new level is NOT saved.
+     */
+    zoom: function(browser, text, full) {
+        if (!browser || (text == false && full == false))
+            return;
+
+        if (text == null || full == null) {
+            var [ site_text, site_full ] = NoSquint.getLevelForBrowser(browser);
+            if (text == null)
+                text = text || site_text;
+            if (full == null)
+                full = full || site_full;
+        }
+
+        debug("set zoom: text=" + text + ", full=" + full);
+        if (text != false)
+            browser.markupDocumentViewer.textZoom = text / 100.0;
+        if (full != false)
+            browser.markupDocumentViewer.fullZoom = full / 100.0;
+
         browser._noSquintified = true;
         if (browser == gBrowser.selectedBrowser)
             NoSquint.updateStatus();
     },
 
     zoomAll: function(attach) {
-        dump("NoSquint: zooming all tabs; attach listeners = " + attach + "\n");
+        debug("zooming all tabs; attach listeners = " + attach);
         for (var i = 0; i < gBrowser.browsers.length; i++) {
             var browser = gBrowser.browsers[i];
             if (browser._noSquintSite)
                 delete browser._noSquintSite;
-            NoSquint.zoom(browser, null);
+            NoSquint.zoom(browser, null, null);
             if (attach)
                 NoSquint.attach(browser);
         }
+        NoSquint.updateStatus();
     },
 
     queueZoomAll: function() {
-        dump("NoSquint: queuing zoom all\n");
         if (NoSquint.zoomAllTimer != null)
             clearTimeout(NoSquint.zoomAllTimer);
         NoSquint.zoomAllTimer = setTimeout(function() { NoSquint.zoomAll(false); }, 1);
     },
-
-    openPrefsDialog: function() {
-        var browser = gBrowser.selectedBrowser;
-        var site = NoSquint.getSiteFromURI(browser.currentURI);
-        var level = NoSquint.getLevelForSite(site) || "default";
-        var url = browser.currentURI.asciiHost + browser.currentURI.path;
-        window.openDialog("chrome://nosquint/content/prefs.xul", "NoSquint Settings", "chrome", 
-                          site, level, url, NoSquint);
-    },
-
 
     locationChanged: function(browser, uri) {
         var site = NoSquint.getSiteFromURI(uri);
@@ -341,7 +588,12 @@ var NoSquint = {
             // Site changed; update timestamp on new site.
             NoSquint.updateSiteList(site, null, true);
         browser._noSquintSite = site;
-        setTimeout(function() { NoSquint.zoom(browser, NoSquint.getLevelForBrowser(browser)); }, 1);
+        var [ text, full ] = NoSquint.getLevelForBrowser(browser);
+        NoSquint.zoom(browser, text, full);
+        if (NoSquint.siteDialog && NoSquint.siteDialog.browser == browser)
+            NoSquint.siteDialog.setValues(browser, site);
+        // XXX: is this still needed (for iframes) in ff3?
+        //setTimeout(function() { NoSquint.zoom(browser, NoSquint.getLevelForBrowser(browser)); }, 1);
     },
 
 
@@ -354,13 +606,13 @@ var NoSquint = {
         for (var site in NoSquint.sites) {
             if (!NoSquint.sites[site])
                 continue
-            var [level, timestamp, counter] = NoSquint.sites[site];
+            var [text, timestamp, counter, full] = NoSquint.sites[site];
             var age = now - new Date(timestamp);
             var prune = (age > NoSquint.forgetMonths*30*24*60*60*1000);
             if (prune)
                 remove.push(site);
-            dump("NoSquint: prune check: " + site + ", age=" + Math.round(age/1000/60/60/24) + 
-                 " days, prune=" + prune + "\n");
+            debug("prune check: " + site + ", age=" + Math.round(age/1000/60/60/24) + 
+                 " days, prune=" + prune);
         }
         if (remove.length) {
             for (var i = 0; i < remove.length; i++)
@@ -382,27 +634,32 @@ var NoSquint = {
             return;
 
         var browser = gBrowser.selectedBrowser;
-        var current_level = Math.round(browser.markupDocumentViewer.textZoom * 100);
-        NoSquint.updateSiteList(browser, current_level);
+        var text = Math.round(browser.markupDocumentViewer.textZoom * 100);
+        var full = Math.round(browser.markupDocumentViewer.fullZoom * 100);
+        NoSquint.updateSiteList(browser, [text, full]);
     },
 
-    updateSiteList: function(site_or_browser, level, update_timestamp) {
+    updateSiteList: function(site_or_browser, levels, update_timestamp) {
         var site = site_or_browser;
         if (typeof(site_or_browser) != "string")
             site = site_or_browser._noSquintSite;
         if (!site)
             return false;
+
         if (update_timestamp) {
-            if (!level && !NoSquint.sites[site])
+            if (!levels && !NoSquint.sites[site])
                 // No need to update the timestamp for a site we're not remembering.
                 return false;
             NoSquint.sites[site][1] = new Date().getTime();
             NoSquint.sites[site][2] += 1;
             NoSquint.saveSiteList();
         } 
-        if (level) {
-            level = parseInt(level) || NoSquint.defaultZoomLevel;
-            if (level == NoSquint.defaultZoomLevel) {
+        if (levels) {
+            var [ text_default, full_default ] = NoSquint.getZoomDefaults();
+            var [ text, full ] = levels;
+            [ text, full ] = [ text == text_default ? 0 : text, full == full_default ? 0 : full ];
+
+            if (!text && !full) {
                 if (!NoSquint.sites[site])
                     // No settings for this site, nothing to do.
                     return;
@@ -410,9 +667,11 @@ var NoSquint = {
                 delete NoSquint.sites[site];
             } else {
                 if (!NoSquint.sites[site])
-                    NoSquint.sites[site] = [level, new Date().getTime(), 1];
-                else
-                    NoSquint.sites[site][0] = level;
+                    NoSquint.sites[site] = [text, new Date().getTime(), 1, full];
+                else {
+                    NoSquint.sites[site][0] = text;
+                    NoSquint.sites[site][3] = full;
+                }
                 // TODO: go through current tabs and resize tabs for this site
             }
             NoSquint.saveSiteList();
@@ -449,8 +708,8 @@ var NoSquint = {
         for (var site in NoSquint.sites) {
             if (!NoSquint.sites[site])
                 continue
-            var [level, timestamp, counter] = NoSquint.sites[site];
-            sites.push(site + "=" + level + "," + timestamp + "," + counter);
+            var [text, timestamp, counter, full] = NoSquint.sites[site];
+            sites.push(site + "=" + text + "," + timestamp + "," + counter + "," + full);
         }
         var siteList = sites.join(" ");
         /* It's a precondition that the site list has changed, so when we set
@@ -460,7 +719,7 @@ var NoSquint = {
          */
         NoSquint.ignoreNextSitesChange = true;
         NoSquint.prefs.setCharPref("sites", siteList);
-        dump("NoSquint: Sites save took: " + (new Date().getTime() - t0) + "ms\n");
+        debug("sites save took: " + (new Date().getTime() - t0) + "ms");
         clearTimeout(NoSquint.saveTimer);
         NoSquint.saveTimer = null;
         NoSquint.sitesDirty = false;
@@ -491,16 +750,18 @@ var NoSquint = {
         } catch (err) {} 
 
         var prefs = [
-            "zoomIncrement", "wheelZoomEnabled", "zoomIncrement", "hideStatus", "zoomlevel",
-            "sitesSaveDelay", "rememberSites", "exceptions", "sites", "forgetMonths"
+            "zoomIncrement", "wheelZoomEnabled", "zoomIncrement", "hideStatus", "zoomlevel", "action",
+            "sitesSaveDelay", "rememberSites", "exceptions", "sites", "forgetMonths", "fullZoomPrimary"
         ];
         for (var i in prefs)
             NoSquint.observe(null, "nsPref:changed", prefs[i]);
 
-        var pbi = NoSquint.prefs.QueryInterface(Components.interfaces.nsIPrefBranchInternal);
-        pbi.addObserver("", this, false);
-        pbi = NoSquint.mousePrefs.QueryInterface(Components.interfaces.nsIPrefBranchInternal);
-        pbi.addObserver("", this, false);
+    
+        
+        NoSquint.prefs.QueryInterface(Components.interfaces.nsIPrefBranch2);
+        NoSquint.prefs.addObserver("", NoSquint, false);
+        NoSquint.mousePrefs.QueryInterface(Components.interfaces.nsIPrefBranch2);
+        NoSquint.mousePrefs.addObserver("", NoSquint, false);
     },
 
     observe: function(subject, topic, data) {
@@ -521,7 +782,7 @@ var NoSquint = {
                  * the hook for wheel zoom.
                  */
                 var action = NoSquint.mousePrefs.getIntPref("action");
-                if (action == 3) {
+                if (action == 3 || action == 5) {
                     NoSquint.prefs.setBoolPref("wheelZoomEnabled", true);
                     //alert("Setting wheelZoomEnabled=true, action=0 because action == 3");
                     NoSquint.mousePrefs.setIntPref("action", 0);
@@ -552,15 +813,26 @@ var NoSquint = {
                 NoSquint.pruneSites();
                 break;
 
+            case "fullZoomPrimary":
+                NoSquint.fullZoomPrimary = NoSquint.prefs.getBoolPref("fullZoomPrimary");
+                NoSquint.updateZoomMenu();
+                NoSquint.queueZoomAll();
+                break;
+
             case "hideStatus":
                 NoSquint.hideStatus = NoSquint.prefs.getBoolPref("hideStatus");
                 document.getElementById("nosquint-status").hidden = NoSquint.hideStatus;
+                if (!NoSquint.hideStatus)
+                    NoSquint.handleTabChanged();
+
+                /*
                 if (NoSquint.hideStatus)
                     gBrowser.tabContainer.removeEventListener("TabSelect", NoSquint.handleTabChanged, false);
                 else {
                     gBrowser.tabContainer.addEventListener("TabSelect", NoSquint.handleTabChanged, false);
                     NoSquint.handleTabChanged();
                 }
+                */
                 break;
 
             case "rememberSites":
@@ -588,6 +860,7 @@ var NoSquint = {
                  * malformed entries gracefully (in case the user edits them manually
                  * and screws up).
                  */
+                // TODO: look at nsIContentPrefService
                 if (NoSquint.ignoreNextSitesChange) {
                     NoSquint.ignoreNextSitesChange = false;
                     break;
@@ -604,11 +877,13 @@ var NoSquint = {
                         continue; // malformed
                     var [site, info] = parts;
                     var parts = info.split(',');
-                    NoSquint.sites[site] = [parseInt(parts[0]) || NoSquint.defaultZoomLevel, now, 1];
+                    NoSquint.sites[site] = [parseInt(parts[0]) || 0, now, 1, 0];
                     if (parts.length > 1)
                         NoSquint.sites[site][1] = parseInt(parts[1]) || now;
                     if (parts.length > 2)
                         NoSquint.sites[site][2] = parseInt(parts[2]) || 1;
+                    if (parts.length > 3)
+                        NoSquint.sites[site][3] = parseInt(parts[3]) || 0;
 
                 }
                 if (NoSquint.sitesDirty) {
@@ -631,7 +906,7 @@ var NoSquint = {
 // Listener used to receive notifications when a new URI is about to be loaded.
 function ProgressListener(browser) {
     this.browser = browser;
-    this.lastURI = null;
+    this.update = false;
 }
 
 ProgressListener.prototype.QueryInterface = function(aIID) {
@@ -643,17 +918,25 @@ ProgressListener.prototype.QueryInterface = function(aIID) {
 }
 
 ProgressListener.prototype.onLocationChange = function(progress, request, uri) {
-    //alert("Location change: " + uri.spec + " -- old: " + this.lastURI);
-    /* XXX: it makes sense that if the URI hasn't changed we don't need to
-     * change zoom, but there seems to be a bug in ff where if the page contains
-     * frames, reloads will not apply the browser's zoom level to the frame. 
-     * So this we make sure we reset the textzoom level for all page loads.
+    /* This is called when it's confirmed a URL is loading (including reload).
+     * We set a flag here to update the zoom levels on the next state change
+     * rather than doing it immediately, because sometime between now and then
+     * firefox's internal full zoom gets reset, and we want to update full
+     * zoom after that happens (to override it, in effect).
      */
-    this.lastURI = uri.spec;
-    NoSquint.locationChanged(this.browser, uri);
+    debug("Location change: " + uri.spec);
+    this.update = true;
+    NoSquint.abortPendingZoomManager();
+    NoSquint.locationChanged(this.browser, this.browser.currentURI);
 }
 
-ProgressListener.prototype.onStateChange = function(progress) {
+ProgressListener.prototype.onStateChange = function(progress, request, state, status) {
+    /*
+    if (this.update) {
+        this.update = false;
+        NoSquint.locationChanged(this.browser, this.browser.currentURI);
+    }
+    */
     if (!progress.isLoadingDocument) {
         if (NoSquint.sitesDirty)
             NoSquint.saveSiteList();

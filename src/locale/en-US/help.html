@@ -56,32 +56,49 @@
 <h3>General Options</h3>
 <ul>
     <li>
-        <b>Default text zoom level</b>
-            <p>This is the zoom level applied to all pages by default.  A value
-            of 100% is the standard Firefox text size without NoSquint.  With
-            NoSquint, you can override this value to be larger or smaller.</p>
+        <b>Primary zoom method</b>
+            <p>The primary zoom method specifies the behaviour of the standard
+            zoom adjustment shortcuts (ctrl-plus, ctrl-minus, ctrl-mousewheel).
+            With <code>Full Page Zoom</code>, both images and text will be zoomed;
+            with <code>Text Zoom</code>, only text is zoomed.  Whichever zoom method
+            is <i>not</i> set to be primary is referred to as the secondary method.</p>
 
-            <p>Modifying the text zoom when visiting a web page will override this
+            <p>The shift key can be added to any of the shortcuts to control the
+            secondary zoom method.  For example, if the primary zoom method is
+            set to Full Page Zoom, and ctrl-shift-plus is pressed, only text size will
+            be increased.</p>
+            
+
+        <b>Default primary zoom level</b>
+            <p>This is the zoom level of the primary zoom method as applied to
+            all pages by default.  A value of 100% is the standard Firefox zoom
+            level without NoSquint.  With NoSquint, you can override this value
+            to be larger or smaller.</p>
+
+            <p>Modifying the zoom when visiting a web page will override this
             value for that site.</p>
     </li>
     <li>
         <b>Zoom increment</b>
-            <p>You can change the text zoom for a page from the View menu, by
-            using one of the text zoom shortcuts (ctrl-plus/minus or
+            <p>You can change the zoom level for a page from the View menu, by
+            using one of the zoom shortcuts (ctrl-plus/minus or
             ctrl-mousewheel), or by using the optional toolbar buttons.
-            NoSquint will remember these changes.  This setting specifies what
+            NoSquint can remember these changes.  This setting specifies what
             increment, in percent, to use when changing the zoom level.</p>
     </li>
     <li>
-        <b>Enable text zoom with ctrl-mousewheel</b>
-            <p>Selecting this option allows you to adjust the text zoom level
-            by pressing and holding the control key while moving the mousewheel
-            up or down.</p>
+        <b>Enable zoom with ctrl-mousewheel</b>
+            <p>Selecting this option allows you to adjust the zoom level by
+            pressing and holding the control key while moving the mousewheel up
+            or down.  If ctrl-shift-mousewheel is used, this controls the
+            secondary zoom method.</p>
     </li>
     <li>
-        <b>Show current zoom level and site in status bar</b>
-            <p>Selecting this option shows the zoom level and site name in the
-            status bar for the current web page.</p>
+        <b>Show current zoom levels in status bar</b>
+            <p>Selecting this option shows the zoom levels (both full page and
+            text zoom) in the status bar for the current web page.  When
+            hovering over the status panel, a tooltip will appear providing
+            more information.</p>
     </li>
 </ul>
 
@@ -103,24 +120,16 @@ can control how NoSquint determines site names in the Exceptions Tab.</p>
 
 <ul>
     <li>
-        <b>Use the default text zoom level for all sites</b>
-            <p>One of NoSquint's features is the ability to remember custom
-            text zoom levels for individual sites.  If you're not interested
-            this and want to use the same level for all sites, or you just
-            don't want NoSquint to remember any manual changes, select this
-            option.</p>
-    </li>
-    <li>
-        <b>Remember text zoom level per site</b>
+        <b>Remember zoom level per site</b>
             <p>With this option selected, NoSquint will remember any changes
-            you make to the text zoom level (via ctrl-plus/minus keys or
-            ctrl-mousewheel) for a given site.  Next time you visit that site,
-            NoSquint will change the text zoom to the level previously used on
-            that site.</p>
+            you make to the zoom levels for a given site.  Both full page zoom
+            and text zoom levels are remembered independently.  Next time you
+            visit that site, NoSquint will change the zoom to the levels
+            previously used on that site.</p>
     </li>
     <li>
         <b>Forget zoom settings for sites not visited in the last ...</b>
-            <p>With the "remember text zoom level per site" option enabled,
+            <p>With the "remember zoom levels per site" option enabled,
             NoSquint keeps track of all zoom level changes for sites, even
             sites you only visit once.  This option is house cleaning: if you
             haven't visited a site (for which you've set a non-default zoom
@@ -128,9 +137,12 @@ can control how NoSquint determines site names in the Exceptions Tab.</p>
             setting.</p>
     </li>
     <li>
-        <b>Zoom level for the current site (example.com)</b>
-            <p>Sets the text zoom level to the specified value for the site in
-            the current browser tab or window.</p>
+        <b>Use the default zoom level for all sites</b>
+            <p>One of NoSquint's features is the ability to remember custom
+            zoom levels for individual sites.  If you're not interested this
+            and want to use the same level for all sites, or you just don't
+            want NoSquint to remember any manual changes, select this
+            option.</p>
     </li>
 </ul>
 

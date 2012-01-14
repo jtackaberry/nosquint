@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/global.css"  type="text/css"?>
+<?xml-stylesheet href="chrome://nosquint/content/prefs.css"  type="text/css"?>
+<!DOCTYPE window SYSTEM "chrome://nosquint/locale/siteprefs.dtd">
+
+<dialog xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        xmlns:html="http://www.w3.org/1999/xhtml"
+        title="&ns.pref.title;"
+        buttons="accept,cancel" 
+        ondialogaccept="NoSquintSitePrefs.close()"
+        ondialogcancel="NoSquintSitePrefs.cancel()"
+        id="nosquint-siteprefs-dialog"
+        persist="screenX screenY"
+        onload="NoSquintSitePrefs.init(document, this)">
+
+    <script src="siteprefs.js" />
+
+    <stringbundleset id="stringbundleset">
+        <stringbundle id="nosquint-prefs-bundle" src="chrome://nosquint/locale/siteprefs.properties" />
+    </stringbundleset>
+
+    <groupbox id="site">
+        <caption />
+        <grid id="siteZoom-box" flex="1">
+            <columns>
+                <column />
+                <column />
+                <column />
+                <column flex="1" />
+                <column />
+            </columns>
+            <rows>
+                <row align="center">
+                    <hbox>
+                        <spacer flex="1" />
+                        <label value="&ns.pref.fullZoom.label;:" />
+                    </hbox>
+                    <scale id="full-zoom-slider" min="40" increment="1" max="300" style="width:200px"
+                           onchange="NoSquintSitePrefs.sliderChange('full', this)"/>
+                    <hbox align="center">
+                        <textbox id="full-zoom-level" size="2" type="number" min="40" max="300" increment="5" />
+                        <label class="percent">%</label>
+                    </hbox>
+                    <spacer flex="1" />
+                    <button  label="&ns.pref.button.useDefault.label;"
+                             id="siteZoom-button" oncommand="NoSquintSitePrefs.buttonUseDefault('full')" />
+                </row>
+                <row align="center">
+                    <hbox>
+                        <spacer flex="1" />
+                        <label value="&ns.pref.textZoom.label;:" />
+                    </hbox>
+                    <scale id="text-zoom-slider" min="40" increment="1" max="300" 
+                           onchange="NoSquintSitePrefs.sliderChange('text', this)"/>
+                    <hbox align="center">
+                        <textbox id="text-zoom-level" size="2" type="number" min="40" max="300" increment="5"  />
+                        <label class="percent">%</label>
+                    </hbox>
+                    <spacer flex="1" />
+                    <button  label="&ns.pref.button.useDefault.label;"
+                             id="siteZoom-button" oncommand="NoSquintSitePrefs.buttonUseDefault('text')" />
+                </row>
+            </rows>
+        </grid>
+    </groupbox>
+</dialog>

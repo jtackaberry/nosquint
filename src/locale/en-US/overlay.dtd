@@ -1,1 +1,9 @@
-<!ENTITY nosquint.label "NoSquint Settings">
+<!ENTITY ns.tooltip.site.label "Site Name">
+<!ENTITY ns.tooltip.fullZoom.label "Full Zoom">
+<!ENTITY ns.tooltip.textZoom.label "Text Zoom">
+
+<!ENTITY ns.menu.fullZoom.label "Full Zoom">
+<!ENTITY ns.menu.textZoom.label "Text Zoom">
+<!ENTITY ns.menu.reset.label "Reset Levels">
+<!ENTITY ns.menu.siteSettings.label "Site Settings">
+<!ENTITY ns.menu.globalSettings.label "Global Settings">

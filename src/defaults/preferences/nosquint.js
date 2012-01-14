@@ -7,3 +7,4 @@ pref("extensions.nosquint.exceptions", "*/~* *.sourceforge.net *.google.[*]");
 pref("extensions.nosquint.wheelZoomEnabled", false);
 pref("extensions.nosquint.hideStatus", false);
 pref("extensions.nosquint.forgetMonths", 6);
+pref("extensions.nosquint.fullZoomPrimary", true);

@@ -6,28 +6,103 @@
     <script src="nosquint.js" />
     <script src="init.js" />
 
+    <stringbundleset id="stringbundleset">
+        <stringbundle id="nosquint-overlay-bundle" src="chrome://nosquint/locale/overlay.properties" />
+    </stringbundleset>
+
     <toolbarpalette id="BrowserToolbarPalette">
         <toolbaritem id="nosquint-toolbar">
             <toolbarbutton id="nosquint-button-reduce" class="toolbarbutton-1"
-                           label="Shrink Text" tooltiptext="Makes text smaller for this site"
-                            oncommand="ZoomManager.prototype.getInstance().reduce();" />
+                           label="Zoom Out" tooltiptext="Zoom out"
+                           oncommand="NoSquint.buttonReduce(event);" />
             <toolbarbutton id="nosquint-button-enlarge" class="toolbarbutton-1"
-                           label="Enlarge Text" tooltiptext="Makes text larger for this site"
-                            oncommand="ZoomManager.prototype.getInstance().enlarge();" />
+                           label="Zoom In" tooltiptext="Zoom in"
+                           oncommand="NoSquint.buttonEnlarge(event);" />
         </toolbaritem>
     </toolbarpalette>
 
+    <keyset id="mainKeyset">
+        <key id="key_noSquintEnlargeSecondary" key="+" modifiers="control shift" 
+             command="cmd_noSquintEnlargeSecondary" />
+        <key id="key_noSquintReduceSecondary" key="_" modifiers="control shift" 
+             command="cmd_noSquintReduceSecondary" keytext="-" />
+    </keyset>
+
     <commandset id="mainCommandSet">
-        <command id="cmd_noSquintPrefs" oncommand="NoSquint.openPrefsDialog()" />
+        <command id="cmd_noSquintPrefs" oncommand="NoSquint.openGlobalPrefsDialog()" />
+        <command id="cmd_fullZoomEnlarge" oncommand="NoSquint.cmdEnlargePrimary()" />
+        <command id="cmd_fullZoomReduce" oncommand="NoSquint.cmdReducePrimary()" />
+        <command id="cmd_fullZoomReset" oncommand="NoSquint.cmdReset()" />
+        <command id="cmd_noSquintEnlargeSecondary" oncommand="NoSquint.cmdEnlargeSecondary()" />
+        <command id="cmd_noSquintReduceSecondary" oncommand="NoSquint.cmdReduceSecondary()" />
     </commandset>
 
-    <menupopup id="menu_ToolsPopup">
-        <menuitem id="nosquint-menuitem" label="&nosquint.label;" oncommand="NoSquint.openPrefsDialog()"
-                  insertafter="devToolsSeparator" />
-    </menupopup>
-
     <statusbar id="status-bar">
+        <tooltip id="nosquint-status-tooltip" orient="vertical" style="background-color: #33DD00;">
+            <grid>
+                <columns>
+                    <column />
+                    <column />
+                </columns>
+                <rows>
+                    <row>
+                        <hbox>
+                            <spacer flex="1" />
+                            <label value="&ns.tooltip.site.label;:" style="font-weight: bold" />
+                        </hbox>
+                        <label value="" id="nosquint-status-tooltip-site" />
+                    </row>
+                    <row>
+                        <hbox>
+                            <spacer flex="1" />
+                            <label value="&ns.tooltip.fullZoom.label;:" style="font-weight: bold" />
+                        </hbox>
+                        <label value="" id="nosquint-status-tooltip-full" />
+                    </row>
+                    <row>
+                        <hbox>
+                            <spacer flex="1" />
+                            <label value="&ns.tooltip.textZoom.label;:" style="font-weight: bold" />
+                        </hbox>
+                        <label value="" id="nosquint-status-tooltip-text" />
+                    </row>
+                </rows>
+            </grid>
+        </tooltip>
+
+        <menupopup id="nosquint-status-popup" oncommand="NoSquint.popupItemSelect(event)">
+            <menuitem id="nosquint-popup-site" label="Site" disabled="true" style="font-style: italic" />
+            <menu label="&ns.menu.fullZoom.label;">
+                <menupopup id="nosquint-status-popup-full">
+                    <menuitem type="radio" name="full" label="90%" />
+                    <menuitem type="radio" name="full" label="100%" />
+                    <menuitem type="radio" name="full" label="110%" />
+                    <menuitem type="radio" name="full" label="120%" />
+                    <menuitem type="radio" name="full" label="130%" />
+                    <menuitem type="radio" name="full" label="140%" />
+                    <menuitem type="radio" name="full" label="150%" />
+                </menupopup>
+            </menu>
+            <menu label="&ns.menu.textZoom.label;">
+                <menupopup id="nosquint-status-popup-text">
+                    <menuitem type="radio" name="text" label="90%" />
+                    <menuitem type="radio" name="text" label="100%" />
+                    <menuitem type="radio" name="text" label="110%" />
+                    <menuitem type="radio" name="text" label="120%" />
+                    <menuitem type="radio" name="text" label="130%" />
+                    <menuitem type="radio" name="text" label="140%" />
+                    <menuitem type="radio" name="text" label="150%" />
+                </menupopup>
+            </menu>
+            <menuitem label="&ns.menu.reset.label;" onclick="NoSquint.cmdReset()" />
+            <menuitem label="&ns.menu.siteSettings.label;" onclick="NoSquint.openSitePrefsDialog()" />
+            <menuseparator />
+            <menuitem label="&ns.menu.globalSettings.label;" onclick="NoSquint.openGlobalPrefsDialog()" />
+        </menupopup>
+
         <statusbarpanel class="statusbarpanel-iconic-text" id="nosquint-status" label="100%" 
-                        onclick="NoSquint.openPrefsDialog()" src="chrome://nosquint/skin/icon-enlarge-16.png" />
+                        onclick="NoSquint.statusPanelClick(event)" 
+                        src="chrome://nosquint/skin/icon-enlarge-16.png" 
+                        tooltip="nosquint-status-tooltip" />
     </statusbar>
 </overlay> 
