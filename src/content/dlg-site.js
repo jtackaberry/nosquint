@@ -69,9 +69,11 @@ NoSquint.dialogs.site = NoSquint.ns(function() { with (NoSquint) {
 
         for (let [id, defcolor] in items(NSQ.prefs.defaultColors)) {
             $(id).parentNode.childNodes[1].color = (!style || style[id] == '0' ? defcolor : style[id]);
-            $(id).checked = (!style || style[id] == '0' ? false : true);
+            $(id).checked = Boolean(style && style[id] && style[id] != '0');
             this.colorChecked.apply($(id));
         }
+        for (let attr in iter(['colorBackgroundImages', 'linksUnderline']))
+            $(attr).checked = Boolean(style && style[attr] && style[attr] != '0');
         window.focus();
         window.sizeToContent();
     };
@@ -160,7 +162,7 @@ NoSquint.dialogs.site = NoSquint.ns(function() { with (NoSquint) {
                 style.enabled = style.enabled || Boolean(style[attr]);
             }
             for (let attr in iter(['colorBackgroundImages', 'linksUnderline'])) {
-                style[attr] = $(attr).checked;
+                style[attr] = Boolean($(attr).checked);
                 style.enabled = style.enabled || Boolean(style[attr]);
             }
         }

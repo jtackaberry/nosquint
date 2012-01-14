@@ -130,6 +130,7 @@
 
         // Less common cases that we'll cover with the more expensive regexp.
         return document.contentType.search(/^text\/(plain|css|xml|javascript)/) != 0;
+        //return document.contentType.search(/^text\/(plain|css|xml|javascript)|image\//) != 0;
     };
 
     this.isImage = function(browser) {

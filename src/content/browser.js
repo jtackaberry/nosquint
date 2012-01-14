@@ -78,8 +78,7 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
             var browser = gBrowser.selectedBrowser;
             var text = full = false;
             var increment = NSQ.prefs.zoomIncrement * (event.detail < 0 ? 1 : -1);
-            //var img = isImage(browser);
-            var img = false;
+            var img = isImage(browser);
                 
             if (NSQ.prefs.wheelZoomInvert)
                 increment *= -1;
@@ -89,11 +88,8 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
             else
                 text = Math.round((browser.markupDocumentViewer.textZoom * 100) + increment);
 
-            //if (!img || !browser.getUserData('nosquint').site) {
-            if (!img) {
-                NSQ.browser.zoom(browser, text, full);
-                NSQ.browser.saveCurrentZoom();
-            }
+            NSQ.browser.zoom(browser, text, full);
+            NSQ.browser.saveCurrentZoom();
         }
         event.stopPropagation();
         event.preventDefault();
@@ -270,10 +266,8 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
      * site name user data attached to the browser.
      */
     this.getSiteFromBrowser = function(browser) {
-        if (isChrome(browser)) {
-            debug('getSiteFromBrowser(): isChrome=true, url=' + browser.docShell.document.URL);
+        if (isChrome(browser))
             return null;
-        }
         return NSQ.prefs.getSiteFromURI(browser.currentURI);
     };
 

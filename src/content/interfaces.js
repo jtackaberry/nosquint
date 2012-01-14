@@ -77,8 +77,8 @@ NoSquint.interfaces = NoSquint.ns(function() { with (NoSquint) {
         },
 
         onStateChange: function(progress, request, state, astatus) {
-            //debug("LISTENER: request=" + request + ", state=" + state + ", status=" + 
-            //      astatus + ", type=" + this.browser.docShell.document.contentType);
+            debug("LISTENER: request=" + request + ", state=" + state + ", status=" + 
+                  astatus + ", type=" + this.browser.docShell.document.contentType);
 
             /* Check the current content type against the content type we initially got.
              * This changes in the case when there's an error page (e.g. dns failure),
