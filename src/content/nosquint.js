@@ -350,11 +350,10 @@ var NoSquint = {
         var increment = NoSquint.zoomIncrement * (event.detail < 0 ? 1 : -1);
 
         if (NoSquint.fullZoomPrimary && !event.shiftKey || !NoSquint.fullZoomPrimary && event.shiftKey)
-            full = (browser.markupDocumentViewer.fullZoom * 100) + increment;
+            full = Math.round((browser.markupDocumentViewer.fullZoom * 100) + increment);
         else
-            text = (browser.markupDocumentViewer.textZoom * 100) + increment;
+            text = Math.round((browser.markupDocumentViewer.textZoom * 100) + increment);
 
-        var current = Math.round(browser.markupDocumentViewer.textZoom * 100);
         NoSquint.zoom(browser, text, full);
         NoSquint.saveCurrentZoom();
 
@@ -422,11 +421,13 @@ var NoSquint = {
     },
 
 
-    /* Takes an array of exceptions 
+    /* Takes an array of exceptions as stored in prefs, and returns a sorted
+     * list, where each exception is converted to a regexp grammar.  The list
+     * is sorted such that exceptions with the most literal (non-wildcard)
+     * characters are first.
      */
     processExceptions: function(exlist) {
-        /* My eyes!  The googles do nothing!
-         * This hideous function takes an exception, with our custom
+        /* This ugly function takes an exception, with our custom
          * grammar, and converts it to a regular expression that we can
          * match later.  Hostname and path components are processed in
          * separate calls; re_star and re_dblstar define the regexp syntax
@@ -654,7 +655,8 @@ var NoSquint = {
     },
 
     /* Queues a zoomAll.  Useful when we might otherwise call zoomAll() 
-     * multiple times.
+     * multiple times, such as in the case of multiple preferences being
+     * updated at once.
      */
     queueZoomAll: function() {
         if (!NoSquint.zoomAllTimer)
