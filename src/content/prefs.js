@@ -22,6 +22,15 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
         linksVisited: '#551a8b'
     };
 
+    /* Active window we can use for window methods (e.g. setTimeout).  Because
+     * NSQ.prefs is a singleton, it could be that the window we initialized
+     * with has been closed.  In that case, setTimeout will fail with 
+     * NS_ERROR_NOT_INITIALIZED.  So we keep a reference to an available
+     * window here we can call window.* methods with, and if the window
+     * goes away, we find a new one using foreachNSQ().
+     */
+    this.window = window;
+
     // Pref service.
     var svc = Components.classes["@mozilla.org/preferences-service;1"].getService(
                           Components.interfaces.nsIPrefService);
@@ -94,6 +103,11 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
     };
 
     this.destroy = function() {
+        if (this.rememberSites)
+            // In case the window shutting down is the one whose saveTimer is
+            // associated with, we should finish any pending save now.
+            this.finishPendingSaveSiteList();
+
         if (!NSQ.storage.quitting)
             // NSQ.prefs is a singleton so we only ever truly destroy on app
             // shutdown.
@@ -102,18 +116,32 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
         branchNS.removeObserver('', this);
         branchBZ.removeObserver('', this);
 
-        if (this.rememberSites)
-            this.finishPendingSaveSiteList();
-        else
+        if (!this.rememberSites)
             // Per-site setting storage disabled.
             branchNS.setCharPref('sites', '');
 
         this.setSiteSpecific(origSiteSpecific);
+        this.save();
+    };
+
+
+    /* Invoke a window method, such as setTimeout.  We need to do this indirectly
+     * because NSQ.prefs is a singleton, and the window NSQ.prefs initialized with
+     * may not actually still be alive.
+     */
+    this.winFunc = function(func) {
+        var args = Array.prototype.slice.call(arguments, 1); 
+        try {
+            return this.window[func].apply(this.window, args);
+        } catch (e) {
+            // Presumably NS_ERROR_NOT_INITIALIZED.  TODO: verify.
+            this.window = foreachNSQ(function() false);
+            return this.window[func].apply(this.window, args);
+        }
     };
 
     this.setSiteSpecific = function(value) {
         branchBZ.setBoolPref('siteSpecific', value);
-        this.save();
     };
 
     this.preload = function() {
@@ -136,6 +164,7 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
             // Not a pref change.
             return;
 
+        debug('observe(): data=' + data);
         switch (data) {
             case 'siteSpecific':
                 if (branchBZ.getBoolPref('siteSpecific') == false || NSQ.storage.disabled || NSQ.storage.quitting)
@@ -424,7 +453,6 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
         var remove = [];
         var now = new Date();
         for (let [site, settings] in items(this.sites)) {
-        //for (let [site, settings] in Iterator(this.sites)) {
             if (!settings)
                 continue
             var [text, timestamp, counter, full] = settings;
@@ -442,7 +470,7 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
 
         // Fire timer once a day.
         if (pruneTimer == null)
-            pruneTimer = setTimeout(function() { pruneTimer = null; NSQ.prefs.pruneSites(); }, 24*60*60*1000);
+            pruneTimer = this.winFunc('setTimeout', function() { pruneTimer = null; NSQ.prefs.pruneSites(); }, 24*60*60*1000);
     };
 
 
@@ -460,7 +488,7 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
 
         if (levels) {
             // Update record with specified levels.
-            var [text_default, full_default] = this.getZoomDefaults();
+            var [text_default, full_default] = this.getZoomDefaults(site);
             var [text, full] = levels;
             // Default zooms are stored as 0.
             record[0] = text == text_default ? 0 : text;
@@ -523,7 +551,7 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
          * needlessly iterating over the sites array.
          */
         debug("queueSaveSiteList(): delay=" + this.saveDelay);
-        saveTimer = setTimeout(function() NSQ.prefs.saveSiteList(), this.saveDelay);
+        saveTimer = this.winFunc('setTimeout', function() NSQ.prefs.saveSiteList(), this.saveDelay);
     };
 
 
@@ -551,7 +579,7 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
         branchNS.setCharPref('sites', sites.join(' '));
         this.save();
         debug("saveSiteList(): took: " + (new Date().getTime() - t0) + "ms");
-        clearTimeout(saveTimer);
+        this.winFunc('clearTimeout', saveTimer);
         saveTimer = null;
     };
 
@@ -563,7 +591,7 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
         if (saveTimer === null)
             return false;
 
-        clearTimeout(saveTimer);
+        this.winFunc('clearTimeout', saveTimer);
         saveTimer = null;
         return true;
     };
@@ -585,7 +613,9 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
     /* Returns a 2-tuple [text_default, full_default] representing the default
      * zoom levels.
      */
-    this.getZoomDefaults = function() {
+    this.getZoomDefaults = function(site) {
+        if (!site || site.substr(0, 6) == 'about:')
+            return [100, 100];
         return [this.textZoomLevel, this.fullZoomLevel];
     };
 
@@ -598,6 +628,14 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
         var t0 = new Date().getTime();
         if (!URI)
             return null;
+
+        /* It's a bit ugly to hard-code the 'about' case here.  But make it
+         * not-ugly would require some significant reworking of the site
+         * name logic.
+         */
+        if (URI.scheme == 'about')
+            // Truncate path after non-word character (e.g. ?foo=bar is stripped)
+            return URI.scheme + ':' + URI.path.replace(/\W.*$/, '');
 
         var uri_host = URI.asciiHost;
         var uri_path = URI.path;
@@ -765,4 +803,57 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
             }
         });
     };
+
+
+    this.checkVersionChange = function() {
+        this.lastVersion = branchNS.getCharPref('version');
+        function callback(addon) {
+            NSQ.prefs.currentVersion = addon.version;
+            var found = false;
+            foreachNSQ(function(NSQ) {
+                for (let browser in iter(NSQ.browser.gBrowser.browsers)) {
+                    if (browser.currentURI.spec == 'about:nosquint') {
+                        /* With ff4, fetching the addon object is asynchronous, and with ff3, we
+                         * defer this callback also (so as not to take the startup hit), so any
+                         * previously opened about:nosquint tabs (which may be reopened on startup)
+                         * may be loaded before NSQ.prefs.currentVersion is set.  This quasi-hack
+                         * (re)triggers the 'load' event on the window so that the necessary
+                         * elements get updated.
+                         */
+                        var evt = document.createEvent('HTMLEvents');
+                        evt.initEvent('load', true, false);
+                        browser.contentWindow.dispatchEvent(evt);
+                        // XXX: see note below about version comparison.
+                        if (addon.version != NSQ.prefs.lastVersion && !found) {
+                            NSQ.browser.gBrowser.selectedTab = browser;
+                            found = true;
+                        }
+                    }
+                }
+            });
+
+            /* XXX: if we change this to > rather than !=, we need to be smarter than
+             * a simple lexographic comparison, because '2.1b1' > '2.1' which isn't
+             * expected behaviour.
+             */
+            if (addon.version != NSQ.prefs.lastVersion) {
+                if (!found)
+                    NSQ.browser.gBrowser.selectedTab = gBrowser.addTab('about:nosquint');
+                branchNS.setCharPref('version', addon.version);
+                NoSquint.prefs.save();
+            }
+        };
+
+        if (is3x()) {
+            /* Because this.checkVersionChange() is called during init of NSQ.browser,
+             * and Application.extensions.get() is synchronous, defer this call.
+             */
+            defer(0, function() callback(Application.extensions.get('nosquint@urandom.ca')));
+        } else {
+            Components.utils.import("resource://gre/modules/AddonManager.jsm");
+            AddonManager.getAddonByID('nosquint@urandom.ca', callback);
+        }
+    };
+
+
 }});

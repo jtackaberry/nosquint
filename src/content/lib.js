@@ -6,26 +6,33 @@
      * exists once, and is referenced for each window.  (In contrast, doing
      * Application.storage.set('foo', [1,2]) will store a copy of the list.)
      */
-    var extstorage = Application.extensions.get('nosquint@urandom.ca').storage;
-    this.storage = extstorage.get('global', null);
+    this.storage = Application.storage.get('nosquint-global', null);
     if (this.storage === null) {
         // Initialize global defaults.
         this.storage = {
             disabled: false,
             quitting: false,
             origSiteSpecific: null,
-            dialogs: {}
+            dialogs: {},
+            NoSquint: NoSquint
         };
-        extstorage.set('global', this.storage);
+        Application.storage.set('nosquint-global', this.storage);
     }
-
 
     this.is30 = function() {
         return Application.version.substr(0, 4) == '3.0.';
     };
 
     this.is36 = function() {
-        return Application.version.substr(0, 4) >=  '3.6.';
+        return Application.version.substr(0, 4) == '3.6.';
+    };
+
+    this.is3x = function() {
+        return Application.version.substr(0, 4) < '4.0';
+    };
+
+    this.is40 = function() {
+        return Application.version.substr(0, 4) >= '4.0.';
     };
 
     this.$ = function(id, doc) {
@@ -75,7 +82,7 @@
     this.getBaseDomainFromHost = function(host) {
         if (this.storage.TLDs === undefined) {
             // First window opened, so parse from stored list, which is
-            // borrowed from http://www.surbl.org/two-level-tlds
+            // borrowed from http://george.surbl.org/two-level-tlds
             this.storage.TLDs = {};
             for each (let line in this.readLines('chrome://nosquint/content/two-level-tlds'))
                 this.storage.TLDs[line] = true;
@@ -106,6 +113,7 @@
     this.isChrome = function(browser) {
         var document = browser.docShell.document;
         
+        //this.debug('isChrome(): URL=' + document.URL + ', spec=' + browser.currentURI.spec + ', contentType=' + document.contentType);
         if (document.URL == undefined)
             return true;
 
@@ -122,13 +130,14 @@
             return true;
 
         // A couple other common cases.
-        if (document.URL == undefined || document.URL.substr(0, 6) == 'about:')
-            return true;
         if (document.contentType == 'text/html' || document.contentType == 'application/xhtml+xml')
             return false;
+        if (document.URL == undefined || document.URL.substr(0, 6) == 'about:')
+            return true;
 
         // Less common cases that we'll cover with the more expensive regexp.
         return document.contentType.search(/^text\/(plain|css|xml|javascript)/) != 0;
+        //return document.contentType.search(/^text\/(plain|css|xml|javascript)|image\//) != 0;
     };
 
     this.isImage = function(browser) {
@@ -215,6 +224,13 @@
             for (let value in this.iter(arg))
                 yield [n++, value];
         }
+    };
+
+    this.defer = function(delay, callback) {
+        var timer = setTimeout(function() {
+            callback();
+            clearTimeout(timer);
+        }, delay);
     };
 
 }).apply(NoSquint);

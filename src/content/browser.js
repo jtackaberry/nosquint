@@ -10,6 +10,7 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
     var zoomAllTimer = null;             // Timer for queueZoomAll()
     var styleAllTimer = null;            // Timer for queueStyleAll()
     var updateStatusTimer = null;        // Timer for queueUpdateStatus()
+    var tooltipDirty = false;            // True if tooltip needs updating on hover
 
     this.init = function() {
         this.gBrowser = gBrowser;
@@ -51,12 +52,119 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
         gBrowser.tabContainer.addEventListener('TabOpen', this.handleTabOpen, false);
         gBrowser.tabContainer.addEventListener('TabSelect', this.handleTabSelect, false);
         gBrowser.tabContainer.addEventListener('TabClose', this.handleTabClose, false);
-
+        
         this.zoomAll(null, true);
+        this.styleAll(null);
+
+        this.hookZoomButtonsForReset();
+        NoSquint.prefs.checkVersionChange();
     };
 
     this.destroy = function() {
+        if (NSQ.storage.dialogs.site)
+            NSQ.storage.dialogs.site.die();
+
+        gBrowser.tabContainer.removeEventListener('TabOpen', this.handleTabOpen, false);
+        gBrowser.tabContainer.removeEventListener('TabSelect', this.handleTabSelect, false);
+        gBrowser.tabContainer.removeEventListener('TabClose', this.handleTabClose, false);
+        window.removeEventListener('DOMMouseScroll', this.handleMouseScroll, false); 
     };
+
+    this.hookZoomButtonsForReset = function() {
+        if ($('zoom-out-button')) {
+            $('zoom-out-button').onclick = $('zoom-in-button').onclick = 
+                function(event) {
+                    if (event.button == 1)
+                        NoSquint.cmd.buttonReset(event);
+                };
+
+            /* TODO
+            $('zoom-out-button').addEventListener('DOMMouseScroll', function(event) {
+                // Implement wheel zooming over button here.
+            }, false); 
+            */
+        }
+    };
+
+    /* Turns on the Addon Bar (Firefox 4)
+     */
+    this.enableAddonBar = function() {
+        var bar = $('addon-bar');
+        setToolbarVisibility(bar, true);
+    };
+
+    /* Checks whether the zoom buttons are added to any toolbar.  Returns a
+     * 2-tuple [ver, where], where 'ver' is version (3 being NoSquint's, 4
+     * being Firefox 4's native buttons) and where is the index within the
+     * toolbar here the first button was found.
+     */
+    this.checkToolbar = function() {
+        var [ver, button] = [4, $('zoom-controls')];
+        if (!button)
+            var [ver, button] = [3, $('nosquint-button-reduce')];
+        if (!button)
+            var [ver, button] = [3, $('nosquint-button-enlarge')];
+        if (!button)
+            return [0, null];
+        else {
+            var toolbar = button.parentNode;
+            var set = toolbar.currentSet.split(',');
+            return [ver, set.indexOf(button.id)];
+        }
+    };
+
+    /* Adds or removes zoom buttons to the toolbar.  Action is a bitmask with
+     * 1 being add, 2 being remove, and where is the position on the navbar to
+     * add the buttons.  If where is not passed, a good default will be chosen.
+     */
+    this.modifyToolbar = function(action, where) {
+        function remove(button) {
+            if (!button)
+                return;
+            var toolbar = button.parentNode;
+            var set = toolbar.currentSet.split(',');
+            set.splice(set.indexOf(button.id), 1);
+            toolbar.currentSet = set.join(',');
+            toolbar.setAttribute('currentset', set.join(','));
+            document.persist(toolbar.id, 'currentset');
+        }
+
+        if (action & 2) {
+            remove($('nosquint-button-reduce'));
+            remove($('nosquint-button-enlarge'));
+            remove($('nosquint-button-reset'));
+            remove($('zoom-controls'));
+        }
+
+        if (action & 1) {
+            var navbar = $('nav-bar');
+            var set = navbar.currentSet.split(',');
+            if (where === undefined || where === null) {
+                where = set.indexOf('search-container') + 1;
+                if (where == 0)
+                    where = set.length;
+            }
+            var ids = is3x() ? 'nosquint-button-reduce,nosquint-button-enlarge' : 'zoom-controls';
+            set = set.slice(0, where).concat(ids).concat(set.slice(where));
+            navbar.currentSet = set.join(',');
+            navbar.setAttribute('currentset', set.join(','));
+            document.persist(navbar.id, 'currentset');
+            this.hookZoomButtonsForReset();
+        }
+
+        try {
+            BrowserToolboxCustomizeDone(true);
+        }
+        catch (e) {}
+    };
+
+
+    /* Pops up the customize toolbar window.
+     */
+    this.customizeToolbar = function() {
+        return BrowserCustomizeToolbar();
+    };
+
 
 
     /* Event handlers.  Reminder: 'this' will not be NSQ.browser
@@ -69,8 +177,7 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
             var browser = gBrowser.selectedBrowser;
             var text = full = false;
             var increment = NSQ.prefs.zoomIncrement * (event.detail < 0 ? 1 : -1);
-            //var img = isImage(browser);
-            var img = false;
+            var img = isImage(browser);
                 
             if (NSQ.prefs.wheelZoomInvert)
                 increment *= -1;
@@ -80,11 +187,8 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
             else
                 text = Math.round((browser.markupDocumentViewer.textZoom * 100) + increment);
 
-            //if (!img || !browser.getUserData('nosquint').site) {
-            if (!img) {
-                NSQ.browser.zoom(browser, text, full);
-                NSQ.browser.saveCurrentZoom();
-            }
+            NSQ.browser.zoom(browser, text, full);
+            NSQ.browser.saveCurrentZoom();
         }
         event.stopPropagation();
         event.preventDefault();
@@ -162,10 +266,53 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
     };
 
 
+    this.updateStatusTooltip = function() {
+        if (!tooltipDirty)
+            return;
+        tooltipDirty = false;
+
+        // Get cached sitename for current browser.
+        var browser = gBrowser.selectedBrowser;
+        var site = browser.getUserData('nosquint').site;
+        var text = Math.round(browser.markupDocumentViewer.textZoom * 100);
+        var full = Math.round(browser.markupDocumentViewer.fullZoom * 100);
+
+        var e = $('nosquint-status');
+        // updateStatusTooltip() won't be called unless site is not null.
+        $('nosquint-status-tooltip-site').value = site.replace(/%20/g, ' ');
+        $('nosquint-status-tooltip-full').value = full + '%';
+        $('nosquint-status-tooltip-text').value = text + '%';
+
+        var style = this.getStyleForBrowser(browser);
+        var label = $('nosquint-status-tooltip-textcolor');
+        label.style.color = style.colorText || 'inherit';
+        label.style.backgroundColor = style.colorBackground || 'inherit';
+        label.value = (style.colorText || style.colorBackground) ? 'Sample' : 'Site Controlled';
+
+        var vis = $('nosquint-status-tooltip-vis-link');
+        var unvis = $('nosquint-status-tooltip-unvis-link');
+        unvis.value = vis.value = '';
+        vis.style.color = vis.style.textDecoration = 'inherit';
+        unvis.style.color = unvis.style.textDecoration = 'inherit';
+
+        if (!style.linksUnvisited && !style.linksVisited)
+            unvis.value = 'Site Controlled';
+        else {
+            for (let [attr, elem] in items({'linksUnvisited': unvis, 'linksVisited': vis})) {
+                if (style[attr]) {
+                    elem.value = attr.replace('links', '');
+                    elem.style.color = style[attr];
+                    elem.style.textDecoration = style.linksUnderline ? 'underline' : 'inherit';
+                }
+            }
+        }
+    };
+
     /* Updates the status panel and tooltip to reflect current site name
      * and zoom levels.
      */
     this.updateStatus = function() {
+        // Get cached sitename for current browser.
         var browser = gBrowser.selectedBrowser;
         var site = browser.getUserData('nosquint').site;
         // Disable/enable context menu item.
@@ -180,45 +327,20 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
             // Pref indicates we're hiding status panel, no sense in updating.
             return;
 
-        var text = Math.round(browser.markupDocumentViewer.textZoom * 100);
-        var full = Math.round(browser.markupDocumentViewer.fullZoom * 100);
-        var [text_default, full_default] = NSQ.prefs.getZoomDefaults();
-
         var e = $('nosquint-status');
         if (site) {
+            var text = Math.round(browser.markupDocumentViewer.textZoom * 100);
+            var full = Math.round(browser.markupDocumentViewer.fullZoom * 100);
+            var [text_default, full_default] = NSQ.prefs.getZoomDefaults(site);
+
             if (NSQ.prefs.fullZoomPrimary)
-                e.label = full + '%' + (text == 100 ? '' : (' / ' + text + '%'));
+                e.label = full + '%' + (text == text_default ? '' : (' / ' + text + '%'));
             else
-                e.label = text + '%' + (full == 100 ? '' : (' / ' + full + '%'));
-            $('nosquint-status-tooltip-site').value = site.replace(/%20/g, ' ');
-            $('nosquint-status-tooltip-full').value = full + '%';
-            $('nosquint-status-tooltip-text').value = text + '%';
+                e.label = text + '%' + (full == full_default ? '' : (' / ' + full + '%'));
 
-            var style = this.getStyleForBrowser(browser);
-            var label = $('nosquint-status-tooltip-textcolor');
-            label.style.color = style.colorText || 'inherit';
-            label.style.backgroundColor = style.colorBackground || 'inherit';
-            label.value = (style.colorText || style.colorBackground) ? 'Sample' : 'Site Controlled';
-
-            var vis = $('nosquint-status-tooltip-vis-link');
-            var unvis = $('nosquint-status-tooltip-unvis-link');
-            unvis.value = vis.value = '';
-            vis.style.color = vis.style.textDecoration = 'inherit';
-            unvis.style.color = unvis.style.textDecoration = 'inherit';
-
-            if (!style.linksUnvisited && !style.linksVisited)
-                unvis.value = 'Site Controlled';
-            else {
-                for (let [attr, elem] in items({'linksUnvisited': unvis, 'linksVisited': vis})) {
-                    if (style[attr]) {
-                        elem.value = attr.replace('links', '');
-                        elem.style.color = style[attr];
-                        elem.style.textDecoration = style.linksUnderline ? 'underline' : 'inherit';
-                    }
-                }
-            }
             $('nosquint-status-tooltip').style.display = '';
             e.style.fontStyle = e.style.opacity = 'inherit';
+            tooltipDirty = true;
         } else {
             $('nosquint-status-tooltip').style.display = 'none';
             e.label = 'N/A';
@@ -228,6 +350,7 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
              */
             e.style.opacity = 0.5;
             e.style.fontStyle = 'italic';
+            tooltipDirty = false;
         }
     };
 
@@ -252,13 +375,15 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
      */
     this.getZoomForBrowser = function(browser) {
         var site = browser.getUserData('nosquint').site;
-        if (site === null) {
+        debug('getZoomForBrowser(): site=' + site);
+        if (site === undefined) {
             site = this.getSiteFromBrowser(browser);
             browser.getUserData('nosquint').site = site;
+            debug('getZoomForBrowser(): after getSiteFromBrowser(), site=' + site);
         }
 
         var [text, full] = NSQ.prefs.getZoomForSite(site);
-        var [text_default, full_default] = NSQ.prefs.getZoomDefaults();
+        var [text_default, full_default] = NSQ.prefs.getZoomDefaults(site);
         return [text || text_default, full || full_default];
     };
 
@@ -281,6 +406,8 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
     this.attach = function(browser) {
         var listener = new NSQ.interfaces.ProgressListener(browser);
         browser.addProgressListener(listener, CI.nsIWebProgress.NOTIFY_STATE_DOCUMENT);
+        debug('attach(): attached browser URI=' + browser.docShell.document.URL);
+
         var userData = {
             listener: listener,
             stylers: []
@@ -288,6 +415,8 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
         browser.setUserData('nosquint', userData, null);
 
         browser.addEventListener('DOMFrameContentLoaded', function(event) {
+            if (!event.target.contentWindow)
+                return;
             var styler = NSQ.browser.getDocumentStyler(browser, event.target.contentWindow.document);
             styler();
             browser.getUserData('nosquint').stylers.push(styler);
@@ -302,7 +431,7 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
      */
     this.zoom = function(browser, text, full) {
         if (!browser || (text == false && full == false))
-            return;
+            return false;
 
         var t0 = new Date().getTime();
         if (text == null || full == null) {
@@ -312,8 +441,8 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
             if (full == null)
                 full = full || site_full;
             // Only zoom web content, not chrome or plugins (e.g. PDF)
-            if (!browser.getUserData('nosquint').site)
-                [text, full] = [100, 100];
+            //if (!browser.getUserData('nosquint').site)
+            //    [text, full] = [100, 100];
         }
 
         debug("zoom(): text=" + text + ", full=" + full);
@@ -325,6 +454,7 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
             this.queueUpdateStatus();
         var t1 = new Date().getTime();
         debug('zoom(): took ' + (t1-t0));
+        return true;
     };
 
     /* Updates the zoom levels for all tabs; each tab is set to the levels
@@ -371,7 +501,7 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
     this.getCSSFromStyle = function(style) {
         var css = '';
         if (style.colorText || style.colorBackground || style.colorBackgroundImages) {
-            css += 'body,p,div,span,center,blockquote,h1,h2,h3,h4,h5,table,tr,th,td,iframe,a,b,i {';
+            css += 'body,p,div,span,font,ul,li,center,blockquote,h1,h2,h3,h4,h5,table,tr,th,td,iframe,a,b,i {';
             if (style.colorText)
                 css += 'color: ' + style.colorText + ' !important;';
             if (style.colorBackground)

@@ -57,6 +57,8 @@ ZoomManager.enlarge = NoSquint.cmd.enlargePrimary;
 ZoomManager.reduce = NoSquint.cmd.reducePrimary;
 ZoomManager.reset = NoSquint.cmd.reset;
 
+/*
 FullZoom.enlarge = NoSquint.cmd.enlargeFullZoom;
 FullZoom.reduce = NoSquint.cmd.reduceFullZoom;
 FullZoom.reset = NoSquint.cmd.reset;
+*/

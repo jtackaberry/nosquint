@@ -16,6 +16,8 @@ NoSquint.cmd = NoSquint.ns(function() { with (NoSquint) {
     };
 
     this.buttonReset = function(event) {
+        //event.stopPropagation();
+        //event.preventDefault();
         NSQ.cmd.reset();
     };
 
@@ -37,8 +39,9 @@ NoSquint.cmd = NoSquint.ns(function() { with (NoSquint) {
     };
 
     this.reset = function() {
-        var [text, full] = NSQ.prefs.getZoomDefaults();
-        var viewer = getBrowser().mCurrentBrowser.markupDocumentViewer;
+        var browser = getBrowser().mCurrentBrowser;
+        var [text, full] = NSQ.prefs.getZoomDefaults(NSQ.browser.getSiteFromBrowser(browser));
+        var viewer = browser.markupDocumentViewer;
         var updated = false;
 
         if (Math.round(viewer.textZoom * 100.0) != text)
@@ -119,10 +122,15 @@ NoSquint.cmd = NoSquint.ns(function() { with (NoSquint) {
         else if (event.button == 1)
             // Middle click, open global prefs.
             return NSQ.cmd.openGlobalSettings();
+    }
 
-        /* Right click.  Setup the context menu according to the current
-         * browser tab: the site name is set, and the appropriate radio 
-         * menuitems get selected.
+    this.statusPanelPrepareMenu = function(event) {
+        if (event.button != 2)
+            // Not a right click.
+            return;
+
+        /* Setup the context menu according to the current browser tab: the
+         * site name is set, and the appropriate radio menuitems get selected.
          */
         var popup = $('nosquint-status-popup');
         var browser = gBrowser.selectedBrowser;
@@ -145,7 +153,7 @@ NoSquint.cmd = NoSquint.ns(function() { with (NoSquint) {
         for (let child in iter(popup_full.childNodes))
             child.setAttribute('checked', child.label.replace(/%/, '') == current_full);
 
-        popup.openPopupAtScreen(event.screenX, event.screenY, true);
+        //popup.openPopupAtScreen(event.screenX, event.screenY, true);
     };
 
 
@@ -161,7 +169,7 @@ NoSquint.cmd = NoSquint.ns(function() { with (NoSquint) {
         var dlg = NSQ.storage.dialogs.site;
         if (dlg)
             return dlg.setBrowser(NSQ.browser, browser);
-        window.openDialog('chrome://nosquint/content/dlg-site.xul', null, 'chrome', NSQ.browser, browser);
+        window.openDialog('chrome://nosquint/content/dlg-site.xul', 'nsqSite', 'chrome', NSQ.browser, browser);
     };
 
 
@@ -178,7 +186,18 @@ NoSquint.cmd = NoSquint.ns(function() { with (NoSquint) {
                 host += ':' + browser.currentURI.port;
         } catch (err) {};
         var url = host + browser.currentURI.path;
-        window.openDialog('chrome://nosquint/content/dlg-global.xul', null, 'chrome', url);
+        window.openDialog('chrome://nosquint/content/dlg-global.xul', 'nsqGlobal', 'chrome', url);
+    };
+
+    this.showToolbarPanel = function() {
+        var panel = $('nosquint-toolbar-buttons-notify');
+        var anchor = $('zoom-out-button');
+        if (!anchor)
+            anchor = $('nosquint-button-reduce');
+        panel.openPopup(anchor, 'after_start', 0, 0, false, false, null);
+        defer(5000, function() {
+            panel.hidePopup();
+        });
     };
 
 }});

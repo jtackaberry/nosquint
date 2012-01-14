@@ -1,0 +1,207 @@
+<html>
+<head>
+    <title>About NoSquint</title>
+    <style>
+        h1 {
+            font-family: tahoma, sans-serif;
+            font-size: 50px;
+            padding: 0;
+            margin-left: -40px;
+        }
+
+        a:link, a:visited {
+            text-decoration: none;
+            color: #0489b7;
+        }
+
+        a:hover, a:active {
+            text-decoration: underline;
+        }
+
+
+        #outer {
+            width: 80%;
+            margin: 0 auto;
+        }
+
+        div.box {
+            padding: 20px 0;
+            width: 100%;
+            margin: 40px 0 0;
+            background: #f9f9f9 url(chrome://nosquint/skin/box-grunge.png) 0 0 repeat-x;
+            border: 1px solid #dbe5ea;
+            -moz-border-radius: 10px;
+            border-radius: 10px;
+            -moz-box-shadow: 0 2px 3px rgba(0,0,0,0.05);
+        }
+
+        div.box:nth-child(2) {
+            margin: -65px 0 0;
+            padding: 30px 0;
+        }
+
+        div.box h2 {
+            color: #303030;
+            font-size: 150%;
+            margin: 0 0 10px;
+            font-family: georgia,serif;
+            font-weight: normal;
+            font-style: italic;
+        }
+
+        div.col > img {
+            display: block;
+            margin: 0 auto;
+            max-width: 100%;
+        }
+
+        div.box div.col {
+            float: left;
+            padding: 1px 0;
+            margin-left: 3%;
+            width: 29%;
+            font-size: 100%;
+            color: #6D7581;
+        }
+
+    </style>
+</head>
+<body>
+
+<div id='outer'>
+    <h1>
+        <img src="chrome://nosquint/skin/icon96.png" align='absmiddle' />
+        <span style='color: #b73636'>NoSquint</span> <span style='color: #666' id='version1'></1span>
+    </h1>
+    <div class='box'>
+        <div class='col'>
+            <h2>Welcome!</h2>
+            <p>Thanks for installing NoSquint <span id='version2'></span>!</p>
+            <p> NoSquint improves your browsing experience by giving you the tools you need to combat
+            small fonts and unreadable colors on the web.  </p>
+            <p>You can always find the <a href='https://urandom.ca/nosquint/'>latest version</a> online.</p>
+        </div>
+        <div class='col'>
+            <h2>Toolbar Buttons</h2>
+            <img src='chrome://nosquint/skin/toolbar-shot.jpg' />
+            <p id='toolbar-add-upgrade'>Did you know there are zoom buttons for the toolbar?</p>
+            <p id='toolbar-remove-upgrade'>The toolbar zoom buttons can be added and removed at any time.</p>
+            <p id='toolbar-remove-firstrun'>Because you're running NoSquint for the first time, zoom buttons have been added to your toolbar.</p>
+            <p id='toolbar-remove'>
+            <button id="toolbar-buttons-toggle">Add Toolbar Buttons</button>
+        </div>
+        <div class='col'>
+            <h2>Customize Your Toolbar</h2>
+            <p>Not happy with the default placement of the toolbar buttons?</p>
+            <p>Firefox lets you customize your toolbars.  You can drag the buttons to a different position,
+              or even to another toolbar.</p>
+            <button id="toolbar-buttons-customize">Customize Toolbar</button>
+        </div>
+        <div style='clear: both; margin-bottom: 40px'></div>
+
+
+        <div class='col'>
+            <h2>Getting Started</h2>
+            <p>If your status bar is visible, you should see the NoSquint icon in the bottom corner.</p>
+            <img src='chrome://nosquint/skin/statusbar-shot.jpg' />
+            <p>Clicking this icon with the left, middle, or right mouse buttons will provide different
+               options.  Go ahead and try!
+            <p>Try starting with NoSquint's global settings.<p>
+            <button id="global-settings">NoSquint Global Settings</button>
+        </div>
+        <div class='col'>
+            <h2>How do I zoom?</h2>
+            <p style='margin-bottom: 0'>All the standard zoom shortcuts are supported:</p>
+                <ul style='margin-top: 5px'>
+                    <li>Zoom in/out toolbar buttons</li>
+                    <li>Ctrl-mousewheel</li>
+                    <li>Ctrl-plus and ctrl-minus</li>
+                </ul>
+            </p>
+            <p>Here's a tip: middle clicking on the toolbar buttons will reset the zoom level.</p>
+            <p>And another tip: pressing the shift key with any zoom shortcut will use a different zoom method (text-only by default).</p>
+        </div>
+        <div class='col'>
+            <h2>Firefox 4</h2>
+            <p>As of version 4, Firefox natively includes zoom buttons for the toolbar.  If you're using Firefox 4, you may have noticed that NoSquint automatically replaced its old buttons with the native ones.  Don't worry, they still work like before!</p>
+            <p>In order to best interact with NoSquint, Firefox's new Addon Bar (which replaces the old status bar) should be enabled.  NoSquint will enable it for you when you upgrade.</p>
+
+        </div>
+        <div style='clear: both'></div>
+    </div>
+
+</div>
+
+
+<script type="application/x-javascript">
+var storage = Application.storage.get('nosquint-global', null);
+var NSQ = storage.NoSquint;
+var initialized = false;
+
+function $(id) {
+    return document.getElementById(id);
+}
+
+function update_toolbar_blurb(current) {
+    $('toolbar-remove-firstrun').style.display =
+    $('toolbar-remove-upgrade').style.display =
+    $('toolbar-add-upgrade').style.display = 'none';
+    $(current).style.display = '';
+
+    if (current == 'toolbar-add-upgrade')
+        $('toolbar-buttons-toggle').innerHTML= 'Add Toolbar Buttons';
+    else
+        $('toolbar-buttons-toggle').innerHTML = 'Remove Toolbar Buttons';
+}
+
+window.onload = function() {
+    if (initialized || !NSQ.prefs.currentVersion)
+        return;
+
+    var upgrading = NSQ.prefs.currentVersion != NSQ.prefs.lastVersion;
+    var [tbver, where] = NSQ.browser.checkToolbar();
+
+    if (upgrading && tbver == 3 && !NSQ.is3x()) {
+        // Version 3 buttons, running ff 4 or later, so replace.
+        NSQ.browser.modifyToolbar(3, where);
+        update_toolbar_blurb('toolbar-remove-upgrade');
+    } else if (NSQ.prefs.lastVersion == '0' && tbver == 0) {
+        // First install, add buttons.
+        NSQ.browser.modifyToolbar(1);
+        NSQ.cmd.showToolbarPanel();
+        update_toolbar_blurb('toolbar-remove-firstrun');
+    } else if (tbver)
+        update_toolbar_blurb('toolbar-remove-upgrade');
+    else
+        update_toolbar_blurb('toolbar-add-upgrade');
+
+    $('version1').innerHTML = $('version2').innerHTML = NSQ.prefs.currentVersion;
+
+    if (!NSQ.is3x() && upgrading)
+        NSQ.browser.enableAddonBar();
+
+    NSQ.prefs.lastVersion = NSQ.prefs.currentVersion;
+    initialized = true;
+}
+
+$('toolbar-buttons-toggle').onclick = function() {
+    var [hasButtons, where] = NSQ.browser.checkToolbar();
+    NSQ.browser.modifyToolbar(hasButtons ? 2 : 1);
+    if (!hasButtons) {
+        NSQ.cmd.showToolbarPanel();
+        update_toolbar_blurb('toolbar-remove-upgrade');
+    } else
+        update_toolbar_blurb('toolbar-add-upgrade');
+}
+
+$('toolbar-buttons-customize').onclick = function() {
+    NSQ.browser.customizeToolbar();
+}
+
+$('global-settings').onclick = function() {
+    NSQ.cmd.openGlobalSettings();
+}
+
+</script>
+</body>
+</html>
