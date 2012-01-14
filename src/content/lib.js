@@ -106,6 +106,7 @@
     this.isChrome = function(browser) {
         var document = browser.docShell.document;
         
+        //this.debug('isChrome(): URL=' + document.URL + ', spec=' + browser.currentURI.spec + ', contentType=' + document.contentType);
         if (document.URL == undefined)
             return true;
 

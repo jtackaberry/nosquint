@@ -87,9 +87,17 @@ NoSquint.interfaces = NoSquint.ns(function() { with (NoSquint) {
             var contentType = this.browser.docShell.document.contentType;
             if (this.contentType != contentType) {
                 this.contentType = contentType;
+                var userData = this.browser.getUserData('nosquint');
                 if (isChrome(this.browser)) {
-                    this.browser.getUserData('nosquint').site = null;
+                    // Content type is changed and it's now chrome.  Unzoom (or
+                    // zoom to 100%)
+                    userData.site = null;
                     NSQ.browser.zoom(this.browser, 100, 100);
+                } else if (userData.site === null) {
+                    // Was considered chrome, but now isn't.  Rezoom/style.
+                    delete userData.site;
+                    NSQ.browser.zoom(this.browser);
+                    this.styleApplied = NSQ.browser.style(this.browser);
                 }
             } else if (state & stateFlag) {
                 if (!this.zoomApplied) {
