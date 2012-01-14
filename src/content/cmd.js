@@ -161,7 +161,7 @@ NoSquint.cmd = NoSquint.ns(function() { with (NoSquint) {
         var dlg = NSQ.storage.dialogs.site;
         if (dlg)
             return dlg.setBrowser(NSQ.browser, browser);
-        window.openDialog('chrome://nosquint/content/dlg-site.xul', null, 'chrome', NSQ.browser, browser);
+        window.openDialog('chrome://nosquint/content/dlg-site.xul', 'nsqSite', 'chrome', NSQ.browser, browser);
     };
 
 
@@ -178,7 +178,7 @@ NoSquint.cmd = NoSquint.ns(function() { with (NoSquint) {
                 host += ':' + browser.currentURI.port;
         } catch (err) {};
         var url = host + browser.currentURI.path;
-        window.openDialog('chrome://nosquint/content/dlg-global.xul', null, 'chrome', url);
+        window.openDialog('chrome://nosquint/content/dlg-global.xul', 'nsqGlobal', 'chrome', url);
     };
 
 }});

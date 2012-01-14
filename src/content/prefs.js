@@ -550,7 +550,7 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
          * changes the zoom several times in a short period of time, we aren't
          * needlessly iterating over the sites array.
          */
-        debug("queueSaveSiteList(): delay=" + this.saveDelay + ', window=' + window);
+        debug("queueSaveSiteList(): delay=" + this.saveDelay);
         saveTimer = this.winFunc('setTimeout', function() NSQ.prefs.saveSiteList(), this.saveDelay);
     };
 

@@ -50,7 +50,7 @@
     </popup>
 
     <statusbar id="status-bar">
-        <tooltip id="nosquint-status-tooltip" orient="vertical">
+        <tooltip id="nosquint-status-tooltip" orient="vertical" onpopupshowing="NoSquint.browser.updateStatusTooltip()">
             <grid>
                 <columns>
                     <column />

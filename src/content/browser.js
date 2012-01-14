@@ -10,6 +10,7 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
     var zoomAllTimer = null;             // Timer for queueZoomAll()
     var styleAllTimer = null;            // Timer for queueStyleAll()
     var updateStatusTimer = null;        // Timer for queueUpdateStatus()
+    var tooltipDirty = false;            // True if tooltip needs updating on hover
 
     this.init = function() {
         this.gBrowser = gBrowser;
@@ -56,6 +57,8 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
     };
 
     this.destroy = function() {
+        if (NSQ.storage.dialogs.site)
+            NSQ.storage.dialogs.site.die();
     };
 
 
@@ -162,10 +165,53 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
     };
 
 
+    this.updateStatusTooltip = function() {
+        if (!tooltipDirty)
+            return;
+        tooltipDirty = false;
+
+        // Get cached sitename for current browser.
+        var browser = gBrowser.selectedBrowser;
+        var site = browser.getUserData('nosquint').site;
+        var text = Math.round(browser.markupDocumentViewer.textZoom * 100);
+        var full = Math.round(browser.markupDocumentViewer.fullZoom * 100);
+
+        var e = $('nosquint-status');
+        // updateStatusTooltip() won't be called unless site is not null.
+        $('nosquint-status-tooltip-site').value = site.replace(/%20/g, ' ');
+        $('nosquint-status-tooltip-full').value = full + '%';
+        $('nosquint-status-tooltip-text').value = text + '%';
+
+        var style = this.getStyleForBrowser(browser);
+        var label = $('nosquint-status-tooltip-textcolor');
+        label.style.color = style.colorText || 'inherit';
+        label.style.backgroundColor = style.colorBackground || 'inherit';
+        label.value = (style.colorText || style.colorBackground) ? 'Sample' : 'Site Controlled';
+
+        var vis = $('nosquint-status-tooltip-vis-link');
+        var unvis = $('nosquint-status-tooltip-unvis-link');
+        unvis.value = vis.value = '';
+        vis.style.color = vis.style.textDecoration = 'inherit';
+        unvis.style.color = unvis.style.textDecoration = 'inherit';
+
+        if (!style.linksUnvisited && !style.linksVisited)
+            unvis.value = 'Site Controlled';
+        else {
+            for (let [attr, elem] in items({'linksUnvisited': unvis, 'linksVisited': vis})) {
+                if (style[attr]) {
+                    elem.value = attr.replace('links', '');
+                    elem.style.color = style[attr];
+                    elem.style.textDecoration = style.linksUnderline ? 'underline' : 'inherit';
+                }
+            }
+        }
+    };
+
     /* Updates the status panel and tooltip to reflect current site name
      * and zoom levels.
      */
     this.updateStatus = function() {
+        // Get cached sitename for current browser.
         var browser = gBrowser.selectedBrowser;
         var site = browser.getUserData('nosquint').site;
         // Disable/enable context menu item.
@@ -180,45 +226,20 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
             // Pref indicates we're hiding status panel, no sense in updating.
             return;
 
-        var text = Math.round(browser.markupDocumentViewer.textZoom * 100);
-        var full = Math.round(browser.markupDocumentViewer.fullZoom * 100);
-        var [text_default, full_default] = NSQ.prefs.getZoomDefaults();
-
         var e = $('nosquint-status');
         if (site) {
+            var text = Math.round(browser.markupDocumentViewer.textZoom * 100);
+            var full = Math.round(browser.markupDocumentViewer.fullZoom * 100);
+            var [text_default, full_default] = NSQ.prefs.getZoomDefaults();
+
             if (NSQ.prefs.fullZoomPrimary)
-                e.label = full + '%' + (text == 100 ? '' : (' / ' + text + '%'));
+                e.label = full + '%' + (text == text_default ? '' : (' / ' + text + '%'));
             else
-                e.label = text + '%' + (full == 100 ? '' : (' / ' + full + '%'));
-            $('nosquint-status-tooltip-site').value = site.replace(/%20/g, ' ');
-            $('nosquint-status-tooltip-full').value = full + '%';
-            $('nosquint-status-tooltip-text').value = text + '%';
+                e.label = text + '%' + (full == full_default ? '' : (' / ' + full + '%'));
 
-            var style = this.getStyleForBrowser(browser);
-            var label = $('nosquint-status-tooltip-textcolor');
-            label.style.color = style.colorText || 'inherit';
-            label.style.backgroundColor = style.colorBackground || 'inherit';
-            label.value = (style.colorText || style.colorBackground) ? 'Sample' : 'Site Controlled';
-
-            var vis = $('nosquint-status-tooltip-vis-link');
-            var unvis = $('nosquint-status-tooltip-unvis-link');
-            unvis.value = vis.value = '';
-            vis.style.color = vis.style.textDecoration = 'inherit';
-            unvis.style.color = unvis.style.textDecoration = 'inherit';
-
-            if (!style.linksUnvisited && !style.linksVisited)
-                unvis.value = 'Site Controlled';
-            else {
-                for (let [attr, elem] in items({'linksUnvisited': unvis, 'linksVisited': vis})) {
-                    if (style[attr]) {
-                        elem.value = attr.replace('links', '');
-                        elem.style.color = style[attr];
-                        elem.style.textDecoration = style.linksUnderline ? 'underline' : 'inherit';
-                    }
-                }
-            }
             $('nosquint-status-tooltip').style.display = '';
             e.style.fontStyle = e.style.opacity = 'inherit';
+            tooltipDirty = true;
         } else {
             $('nosquint-status-tooltip').style.display = 'none';
             e.label = 'N/A';
@@ -228,6 +249,7 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
              */
             e.style.opacity = 0.5;
             e.style.fontStyle = 'italic';
+            tooltipDirty = false;
         }
     };
 
