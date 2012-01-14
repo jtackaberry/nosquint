@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<!DOCTYPE overlay SYSTEM "chrome://nosquint/locale/overlay.dtd">
+<overlay id="nosquint-overlay" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+    <script src="nosquint.js" />
+    <script src="init.js" />
+
+    <menupopup id="menu_ToolsPopup">
+        <menuitem id="nosquint-menuitem" label="&nosquint;" oncommand="NoSquint.onMenuItemCommand(event);"
+                  insertbefore="devToolsSeparator" />
+    </menupopup>
+
+</overlay> 

@@ -1,0 +1,6 @@
+content nosquint ${JAR}content/
+overlay chrome://browser/content/browser.xul chrome://nosquint/content/overlay.xul
+
+locale nosquint en-US ${JAR}locale/en-US/
+
+skin nosquint classic/1.0 jar:chrome:/nosquint.jar!/skin/

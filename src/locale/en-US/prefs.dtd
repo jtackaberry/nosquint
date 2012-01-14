@@ -1,0 +1,4 @@
+<!ENTITY title.label "NoSquint Options">
+<!ENTITY level.label "Default text zoom level:">
+<!ENTITY rememberDomains "Remember text zoom level per domain">
+<!ENTITY noRememberDomains "Use the default text zoom level for all domains">
