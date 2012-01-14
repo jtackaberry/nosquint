@@ -12,6 +12,9 @@ NoSquint.interfaces = NoSquint.ns(function() { with (NoSquint) {
      */
     var stateFlag = is30() ? Components.interfaces.nsIWebProgressListener.STATE_STOP
                            : Components.interfaces.nsIWebProgressListener.STATE_TRANSFERRING;
+    /* XXX: if we use STATE_STOP, the move-tab-between-windows kludge below stops
+     * working.
+     */
     //var stateFlag = Components.interfaces.nsIWebProgressListener.STATE_STOP;
 
     /* Listener used to receive notifications when a new URI is about to be loaded.
@@ -68,6 +71,8 @@ NoSquint.interfaces = NoSquint.ns(function() { with (NoSquint) {
              * onStateChange the way styling is currently hooked.
              * XXX: 3.6 private browsing mode exhibits some problems, so zooming
              * is back in onStateChange.
+             * https://support.mozilla.com/en-US/forum/1/563849
+             * https://bugzilla.mozilla.org/show_bug.cgi?id=526828
              */
             NSQ.browser.zoom(this.browser);
 
@@ -103,7 +108,18 @@ NoSquint.interfaces = NoSquint.ns(function() { with (NoSquint) {
             } else if (state & stateFlag) {
                 if (!this.zoomApplied) {
                     this.zoomApplied = true;
-                    NSQ.browser.zoom(this.browser);
+                    if (NSQ.browser.observer.inPrivateBrowsing) {
+                        /* In private browsing mode, Firefox does not honor
+                         * siteSpecific=false and resets the zoom level back to
+                         * 100% after every page load (bug #526828).  So we
+                         * must resort to this retarded hack, queuing a zoom in
+                         * 100ms.  This seems to work ok empirically, but a race
+                         * is theoretically possible. *grmbl*
+                         */
+                        var b = this.browser;
+                        setTimeout(function() NSQ.browser.zoom(b), 100);
+                    } else
+                        NSQ.browser.zoom(this.browser);
                 }
                 if (!this.styleApplied) {
                     if (!isChrome(this.browser) || isImage(this.browser))
@@ -186,7 +202,13 @@ NoSquint.interfaces = NoSquint.ns(function() { with (NoSquint) {
         _hook: function() {
             this._os.addObserver(this, "private-browsing", false);  
             this._os.addObserver(this, "quit-application-granted", false);  
-            this._os.addObserver(this, "em-action-requested", false);  
+            if (is30() || is36())
+                this._os.addObserver(this, "em-action-requested", false);  
+            else {
+                Components.utils.import("resource://gre/modules/AddonManager.jsm");
+                AddonManager.addAddonListener(this);
+            }
+
             try {  
                 var pbs = Components.classes["@mozilla.org/privatebrowsing;1"]  
                                   .getService(Components.interfaces.nsIPrivateBrowsingService);  
@@ -194,6 +216,7 @@ NoSquint.interfaces = NoSquint.ns(function() { with (NoSquint) {
             } catch(ex) {  
                 // ignore exceptions in older versions of Firefox  
             }
+
             this._hooked = true;
         },
 
@@ -201,6 +224,28 @@ NoSquint.interfaces = NoSquint.ns(function() { with (NoSquint) {
             this._os.removeObserver(this, "quit-application-granted");  
             this._os.removeObserver(this, "private-browsing");  
             this._hooked = false;
+        },
+
+        onDisabling: function(addon, needsRestart) {
+            if (addon.id != 'nosquint@urandom.ca' || NSQ.storage.disabled)
+                return;
+
+            NSQ.storage.disabled = true;
+            if (popup('confirm', NSQ.strings.disableTitle, NSQ.strings.disablePrompt) == 1) {
+                // Clicked no
+            } else
+                NSQ.prefs.setSiteSpecific(true);
+        },
+
+        onUninstalling: function(addon, needsRestart) {
+            return this.onDisabling(addon, needsRestart);
+        },
+
+        onOperationCancelled: function(addon) {
+            if (addon.id != 'nosquint@urandom.ca' || NSQ.storage.disabled != true)
+                return;
+            NSQ.prefs.setSiteSpecific(false);
+            NSQ.storage.disabled = false;
         },
 
         observe: function (subject, topic, data) {  
@@ -230,23 +275,14 @@ NoSquint.interfaces = NoSquint.ns(function() { with (NoSquint) {
                     switch (data) {
                         case "item-disabled":
                         case "item-uninstalled":
-                            var item = subject.QueryInterface(Components.interfaces.nsIUpdateItem);
-                            if (item.id != 'nosquint@urandom.ca' || NSQ.storage.disabled)
-                                break;
-
-                            NSQ.storage.disabled = true;
-                            if (popup('confirm', NSQ.strings.disableTitle, NSQ.strings.disablePrompt) == 1) {
-                                // Clicked no
-                            } else
-                                NSQ.prefs.setSiteSpecific(true);
+                            var addon = subject.QueryInterface(Components.interfaces.nsIUpdateItem);
+                            this.onDisabling(addon, true);
                             break;
                         
                         case "item-cancel-action":
-                            var item = subject.QueryInterface(Components.interfaces.nsIUpdateItem);
-                            if (item.id != 'nosquint@urandom.ca' || NSQ.storage.disabled != true)
-                                break;
-                            NSQ.prefs.setSiteSpecific(false);
-                            NSQ.storage.disabled = false;
+                            var addon = subject.QueryInterface(Components.interfaces.nsIUpdateItem);
+                            this.onOperationCancelled(addon);
+                            break;
                     }
                     break;
             }

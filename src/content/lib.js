@@ -6,8 +6,7 @@
      * exists once, and is referenced for each window.  (In contrast, doing
      * Application.storage.set('foo', [1,2]) will store a copy of the list.)
      */
-    var extstorage = Application.extensions.get('nosquint@urandom.ca').storage;
-    this.storage = extstorage.get('global', null);
+    this.storage = Application.storage.get('nosquint-global', null);
     if (this.storage === null) {
         // Initialize global defaults.
         this.storage = {
@@ -16,16 +15,19 @@
             origSiteSpecific: null,
             dialogs: {}
         };
-        extstorage.set('global', this.storage);
+        Application.storage.set('nosquint-global', this.storage);
     }
-
 
     this.is30 = function() {
         return Application.version.substr(0, 4) == '3.0.';
     };
 
     this.is36 = function() {
-        return Application.version.substr(0, 4) >=  '3.6.';
+        return Application.version.substr(0, 4) == '3.6.';
+    };
+
+    this.is40 = function() {
+        return Application.version.substr(0, 4) >= '4.0.';
     };
 
     this.$ = function(id, doc) {

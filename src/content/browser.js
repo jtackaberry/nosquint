@@ -316,6 +316,8 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
         browser.setUserData('nosquint', userData, null);
 
         browser.addEventListener('DOMFrameContentLoaded', function(event) {
+            if (!event.target.contentWindow)
+                return;
             var styler = NSQ.browser.getDocumentStyler(browser, event.target.contentWindow.document);
             styler();
             browser.getUserData('nosquint').stylers.push(styler);
@@ -400,7 +402,7 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
     this.getCSSFromStyle = function(style) {
         var css = '';
         if (style.colorText || style.colorBackground || style.colorBackgroundImages) {
-            css += 'body,p,div,span,center,blockquote,h1,h2,h3,h4,h5,table,tr,th,td,iframe,a,b,i {';
+            css += 'body,p,div,span,font,ul,li,center,blockquote,h1,h2,h3,h4,h5,table,tr,th,td,iframe,a,b,i {';
             if (style.colorText)
                 css += 'color: ' + style.colorText + ' !important;';
             if (style.colorBackground)
