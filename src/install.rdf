@@ -6,7 +6,7 @@
     
         <em:id>nosquint@urandom.ca</em:id>
         <em:name>No Squint</em:name>
-        <em:version>1.92.0</em:version>
+        <em:version>1.93.0</em:version>
         <em:description>Manage site-specific full page and text zoom levels</em:description>
         <em:creator>Jason Tackaberry</em:creator>
         <!-- optional items -->

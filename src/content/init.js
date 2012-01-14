@@ -1,6 +1,9 @@
 window.addEventListener("load", NoSquint.init, false); 
 window.addEventListener("unload", NoSquint.destroy, false); 
 
+// Hook ZoomManager in order to override Firefox's internal per-site
+// zoom memory feature.
+
 ZoomManager._nosquintPendingZoom = null;
 ZoomManager._nosquintOrigZoomGetter = ZoomManager.__lookupGetter__('zoom');
 ZoomManager._nosquintOrigZoomSetter = ZoomManager.__lookupSetter__('zoom');
@@ -38,27 +41,6 @@ ZoomManager.__defineGetter__('zoom', function() {
     return ZoomManager._nosquintOrigZoomGetter();
 });
 
-ZoomManager.enlarge = function() {
-    // FIXME: do we want to update any other tabs of pages in this site?
-    getBrowser().mCurrentBrowser.markupDocumentViewer.fullZoom += (NoSquint.zoomIncrement / 100.0);
-    NoSquint.saveCurrentZoom();
-    NoSquint.updateStatus();
-}
-
-ZoomManager.reduce = function() {
-    getBrowser().mCurrentBrowser.markupDocumentViewer.fullZoom -= (NoSquint.zoomIncrement / 100.0);
-    NoSquint.saveCurrentZoom();
-    NoSquint.updateStatus();
-}
-
-ZoomManager.reset = function() {
-    var viewer = getBrowser().mCurrentBrowser.markupDocumentViewer;
-    var page_zoom_default = NoSquint.getZoomDefaults()[1];
-    if (Math.round(viewer.fullZoom * 100.0) == page_zoom_default)
-        // Page zoom is already at default.
-        return false;
-    viewer.fullZoom = page_zoom_default / 100.0;
-    NoSquint.saveCurrentZoom();
-    NoSquint.updateStatus();
-    return true;
-}
+ZoomManager.enlarge = NoSquint.cmdEnlargePrimary;
+ZoomManager.reduce = NoSquint.cmdReducePrimary;
+ZoomManager.reset = NoSquint.cmdReset;
