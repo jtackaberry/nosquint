@@ -1,8 +1,9 @@
 <?xml version="1.0"?>
 <!DOCTYPE overlay SYSTEM "chrome://nosquint/locale/overlay.dtd">
 <overlay id="nosquint-sanitize" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
-    <script type="application/x-javascript" src="chrome://nosquint/content/init.js" />
-    <script type="application/x-javascript" src="chrome://nosquint/content/lib.js" />
-    <script type="application/x-javascript" src="chrome://nosquint/content/prefs.js" />
+    <script type="application/x-javascript" src="chrome://nosquint/content/utils.js" />
     <script type="application/x-javascript" src="chrome://nosquint/content/sanitize.js" />
+    <script type="application/x-javascript">
+        attach("&ns.sanitize.label;");
+    </script>
 </overlay>

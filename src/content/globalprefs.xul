@@ -14,7 +14,7 @@
         persist="screenX screenY"
         onload="NoSquintPrefs.init(document, this)">
 
-    <script src="globalprefs.js" />
+    <script type="application/x-javascript" src="chrome://nosquint/content/globalprefs.js" />
 
     <stringbundleset id="stringbundleset">
         <stringbundle id="nosquint-prefs-bundle" src="chrome://nosquint/locale/globalprefs.properties" />
@@ -23,6 +23,8 @@
     <tabbox flex="1">
         <tabs>
             <tab label="&ns.pref.tab.options.label;" />
+            <tab label="&ns.pref.tab.zooming.label;" />
+            <tab label="&ns.pref.tab.colors.label;" />
             <tab label="&ns.pref.tab.exceptions.label;" />
         </tabs>
 
@@ -30,8 +32,36 @@
             <!-- Options Tab -->
             <tabpanel id="optionstab" flex="1">
                 <vbox flex="1">
+                    <groupbox id="persistence">
+                        <caption label="&ns.pref.persistence.caption;" />
+                        <radiogroup id="rememberSites" onselect="NoSquintPrefs.sitesRadioSelect()">
+                            <radio label="&ns.pref.persistence.remember.label;" />
+                            <vbox class="indent" id='siteForget-box'>
+                                <hbox align="center">
+                                    <checkbox id="siteForget" label="&ns.pref.persistence.forget.label;" 
+                                              checked="false" />
+                                    <menulist id="siteForget-menu">
+                                        <menupopup>
+                                            <menuitem value="12" label="&ns.pref.persistence.forget.year;"/>
+                                            <menuitem value="6" label="&ns.pref.persistence.forget.6months;" selected="true" />
+                                            <menuitem value="3" label="&ns.pref.persistence.forget.3months;" />
+                                            <menuitem value="1" label="&ns.pref.persistence.forget.month;"/>
+                                        </menupopup>
+                                    </menulist>
+                                </hbox>
+                                <checkbox id="siteSanitize" label="&ns.pref.persistence.sanitize.label;" checked="false" />
+                            </vbox>
+                            <radio label="&ns.pref.persistence.noRemember.label;" />
+                        </radiogroup>
+                    </groupbox>
+                </vbox>
+            </tabpanel>
+
+            <!-- Zooming Tab -->
+            <tabpanel id="zoomingtab" flex="1">
+                <vbox flex="1">
                     <groupbox>
-                        <caption label="&ns.pref.general.caption;" />
+                        <caption label="&ns.pref.zooming.caption;" />
                         <grid>
                             <columns>
                                 <column />
@@ -41,21 +71,24 @@
                                 <row align="center">
                                     <hbox>
                                         <spacer flex="1" />
-                                        <label>&ns.pref.general.primaryMethod.label;:</label>
+                                        <label>&ns.pref.zooming.primaryMethod.label;:</label>
                                     </hbox>
                                     <menulist id="primaryZoomMethod-menu">
                                         <menupopup>
-                                            <menuitem value="full" label="&ns.pref.general.primaryMethod.full;" 
+                                            <menuitem value="full" label="&ns.pref.zooming.primaryMethod.full;" 
                                                       selected="true"/>
-                                            <menuitem value="text" label="&ns.pref.general.primaryMethod.text;"/>
+                                            <menuitem value="text" label="&ns.pref.zooming.primaryMethod.text;"/>
                                         </menupopup>
                                     </menulist>
                                 </row>
 
                                 <row align="center">
-                                    <label>&ns.pref.general.level.label;:</label>
+                                    <hbox>
+                                        <spacer flex="1" />
+                                        <label>&ns.pref.zooming.fullLevel.label;:</label>
+                                    </hbox>
                                     <hbox align="center">
-                                        <textbox id="defaultZoomLevel" size="2" type="number" min="40" 
+                                        <textbox id="fullZoomLevel" size="2" type="number" min="40" 
                                                  max="300" increment="5" />
                                         <label class="percent">%</label>
                                     </hbox>
@@ -64,7 +97,19 @@
                                 <row align="center">
                                     <hbox>
                                         <spacer flex="1" />
-                                        <label>&ns.pref.general.increment.label;:</label>
+                                        <label>&ns.pref.zooming.textLevel.label;:</label>
+                                    </hbox>
+                                    <hbox align="center">
+                                        <textbox id="textZoomLevel" size="2" type="number" min="40" 
+                                                 max="300" increment="5" />
+                                        <label class="percent">%</label>
+                                    </hbox>
+                                </row>
+
+                                <row align="center">
+                                    <hbox>
+                                        <spacer flex="1" />
+                                        <label>&ns.pref.zooming.increment.label;:</label>
                                     </hbox>
                                     <hbox align="center">
                                         <textbox id="zoomIncrement" size="2" type="number" min="1" 
@@ -75,35 +120,58 @@
                             </rows>
                         </grid>
                         <vbox>
-                            <checkbox id="wheelZoomEnabled" label="&ns.pref.general.mousewheel.label;" checked="false" />
-                            <checkbox id="showStatus" label="&ns.pref.general.showstatus.label;" checked="false" />
+                            <checkbox id="zoomImages" label="&ns.pref.zooming.images.label;" checked="false" />
+                            <checkbox id="wheelZoomEnabled" label="&ns.pref.zooming.mousewheel.label;" checked="false" />
+                            <checkbox id="showStatus" label="&ns.pref.zooming.showstatus.label;" checked="false" />
                         </vbox>
-                    </groupbox>
-
-                    <groupbox id="site">
-                        <caption label="&ns.pref.site.caption;" />
-                        <radiogroup id="rememberSites" onselect="NoSquintPrefs.sitesRadioSelect()">
-                            <radio label="&ns.pref.site.remember.label;" />
-                            <hbox id="siteForget-box" align="center" class="indent">
-                                <checkbox id="siteForget" label="&ns.pref.site.forget.label;" checked="false" 
-                                          oncheck="document.getElementById('siteForget-menu').disabled = !this.checked" />
-                                <menulist id="siteForget-menu">
-                                    <menupopup>
-                                        <menuitem value="12" label="&ns.pref.site.forget.year;"/>
-                                        <menuitem value="6" label="&ns.pref.site.forget.6months;" selected="true" />
-                                        <menuitem value="3" label="&ns.pref.site.forget.3months;" />
-                                        <menuitem value="1" label="&ns.pref.site.forget.month;"/>
-                                    </menupopup>
-                                </menulist>
-                            </hbox>
-                            <radio label="&ns.pref.site.noRemember.label;" />
-                        </radiogroup>
                     </groupbox>
                 </vbox>
             </tabpanel>
 
+            <!-- Colors Tab -->
+            <tabpanel id="colorstab" flex="1">
+                <vbox flex="1">
+                    <html:p style="margin: 0 7px 0.5em 7px; padding: 0;">&ns.pref.colors.info;</html:p>
+                    <hbox>
+                        <groupbox flex='1'>
+                            <caption label="&ns.pref.colors.colors.caption;" />
+                            <vbox>
+                                <hbox>
+                                    <checkbox id="colorText" label="&ns.pref.colors.colors.text.label;"
+                                              checked="false" flex="1" />
+                                    <colorpicker type='button' />
+                                </hbox>
+                                <hbox>
+                                    <checkbox id="colorBackground" label="&ns.pref.colors.colors.background.label;"
+                                              checked="false" flex="1" />
+                                    <colorpicker type='button' />
+                                </hbox>
+                                <checkbox id="colorBackgroundImages" label="&ns.pref.colors.colors.images.label;"
+                                          checked="false" flex="1" />
+                            </vbox>
+                        </groupbox>
+                        <groupbox flex='1'>
+                            <caption label="&ns.pref.colors.links.caption;" />
+                            <vbox>
+                                <hbox>
+                                    <checkbox id="linksUnvisited" label="&ns.pref.colors.links.unvisited.label;" 
+                                              checked="false" flex="1" />
+                                    <colorpicker type='button' />
+                                </hbox>
+                                <hbox>
+                                    <checkbox id="linksVisited" label="&ns.pref.colors.links.visited.label;"
+                                              checked="false" flex="1" />
+                                    <colorpicker type='button' />
+                                </hbox>
+                                <checkbox id="linksUnderline" label="&ns.pref.colors.links.underline.label;"
+                                          checked="false" flex="1" />
+                            </vbox>
+                        </groupbox>
+                    </hbox>
+                </vbox>
+            </tabpanel>
 
-            <!-- exceptions Tab -->
+            <!-- Exceptions Tab -->
             <tabpanel id="exceptionstab" flex="1">
                 <vbox flex="1">
                     <html:p style="margin: 0 7px 0.5em 7px; padding: 0;">&ns.pref.exceptions.info;</html:p>

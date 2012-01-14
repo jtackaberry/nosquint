@@ -1,27 +1,44 @@
 <!ENTITY ns.pref.title "NoSquint Global Settings">
 <!ENTITY ns.pref.tab.options.label "Options">
+<!ENTITY ns.pref.tab.zooming.label "Zooming">
+<!ENTITY ns.pref.tab.colors.label "Colors">
 <!ENTITY ns.pref.tab.exceptions.label "Exceptions">
 
-<!ENTITY ns.pref.general.caption "General">
+<!ENTITY ns.pref.zooming.caption "Default Zoom Options">
 
-<!ENTITY ns.pref.general.primaryMethod.label "Primary zoom method">
-<!ENTITY ns.pref.general.primaryMethod.full "Full Page Zoom (images and text)">
-<!ENTITY ns.pref.general.primaryMethod.text "Text Zoom (text only)">
+<!ENTITY ns.pref.zooming.primaryMethod.label "Primary zoom method">
+<!ENTITY ns.pref.zooming.primaryMethod.full "Full Page Zoom (images and text)">
+<!ENTITY ns.pref.zooming.primaryMethod.text "Text Zoom (text only)">
 
-<!ENTITY ns.pref.general.level.label "Default primary zoom level">
-<!ENTITY ns.pref.general.increment.label "Zoom increment">
-<!ENTITY ns.pref.general.mousewheel.label "Enable zoom with ctrl-mousewheel">
-<!ENTITY ns.pref.general.showstatus.label "Show current zoom levels in status bar">
+<!ENTITY ns.pref.zooming.fullLevel.label "Default full page zoom level">
+<!ENTITY ns.pref.zooming.textLevel.label "Default text-only zoom level">
+<!ENTITY ns.pref.zooming.increment.label "Zoom increment">
+<!ENTITY ns.pref.zooming.images.label "Zoom standalone images to fit browser window">
+<!ENTITY ns.pref.zooming.mousewheel.label "Enable zoom with ctrl-mousewheel">
+<!ENTITY ns.pref.zooming.showstatus.label "Show current zoom levels in status bar">
 
-<!ENTITY ns.pref.site.caption "Site">
-<!ENTITY ns.pref.site.noRemember.label "Use the default zoom level (set above) for all sites">
-<!ENTITY ns.pref.site.remember.label "Remember zoom level per site">
-<!ENTITY ns.pref.site.forget.label "Forget zoom settings for sites not visited in the last">
-<!ENTITY ns.pref.site.forget.year "Year">
-<!ENTITY ns.pref.site.forget.6months "Six Months">
-<!ENTITY ns.pref.site.forget.3months "Three Months">
-<!ENTITY ns.pref.site.forget.month "Month">
-<!ENTITY ns.pref.exceptions.info "Exceptions are an advanced feature that controls how NoSquint determines separate sites.  Click the Help button below for full details.">
+<!ENTITY ns.pref.persistence.caption "Persistence">
+<!ENTITY ns.pref.persistence.noRemember.label "Use the global zoom and color settings for all sites">
+<!ENTITY ns.pref.persistence.remember.label "Remember zoom and color settings per site">
+<!ENTITY ns.pref.persistence.forget.label "Forget settings for sites not visited in the last">
+<!ENTITY ns.pref.persistence.forget.year "Year">
+<!ENTITY ns.pref.persistence.forget.6months "Six Months">
+<!ENTITY ns.pref.persistence.forget.3months "Three Months">
+<!ENTITY ns.pref.persistence.forget.month "Month">
+<!ENTITY ns.pref.persistence.sanitize.label "Erase NoSquint site history when Firefox clears private data">
+
+<!ENTITY ns.pref.colors.info "Enabling any of the color options below overrides the default for all pages.">
+<!ENTITY ns.pref.colors.colors.caption "Text and Background">
+<!ENTITY ns.pref.colors.colors.text.label "Text">
+<!ENTITY ns.pref.colors.colors.background.label "Background">
+<!ENTITY ns.pref.colors.colors.images.label "Disable background images">
+<!ENTITY ns.pref.colors.links.caption "Link Colors">
+<!ENTITY ns.pref.colors.links.unvisited.label "Unvisited">
+<!ENTITY ns.pref.colors.links.visited.label "Visited">
+<!ENTITY ns.pref.colors.links.underline.label "Always underline links">
+
+
+<!ENTITY ns.pref.exceptions.info "Exceptions are an advanced feature that controls how NoSquint distinguishes separate sites.  Click the Help button below for full details.">
 
 <!ENTITY ns.pref.exceptions.pattern.label "Pattern for new exception">
 <!ENTITY ns.pref.exceptions.copyButton.label "Copy from URL">

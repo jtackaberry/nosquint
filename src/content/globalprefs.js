@@ -7,24 +7,20 @@ var NoSquintPrefs = {
     init: function(doc, dialog) {
         NoSquintPrefs.doc = doc;
         NoSquintPrefs.dialog = dialog;
+        var prefService = Components.classes["@mozilla.org/preferences-service;1"]
+                            .getService(Components.interfaces.nsIPrefService);
+        NoSquintPrefs.privacyBranch = prefService.getBranch('privacy.item.');
+
         if (window.arguments) {
-            NoSquintPrefs.site = window.arguments[0];
-            NoSquintPrefs.level = window.arguments[1];
-            NoSquintPrefs.url = window.arguments[2];
-            NoSquintPrefs.NoSquint = window.arguments[3];
+            NoSquintPrefs.NoSquint = window.arguments[0];
+            NoSquintPrefs.url = window.arguments[1];
             NoSquintPrefs.NoSquint.globalDialog = this;
             NoSquintPrefs.prefs = NoSquintPrefs.NoSquint.prefs;
         } else {
-            var prefs = Components.classes["@mozilla.org/preferences-service;1"].getService(
-                                      Components.interfaces.nsIPrefService);
-            NoSquintPrefs.prefs = prefs.getBranch("extensions.nosquint.")
+            NoSquintPrefs.prefs = prefService.getBranch("extensions.nosquint.")
         }
-        doc.getElementById("defaultZoomLevel").value = NoSquintPrefs.prefs.getIntPref("zoomlevel");
-        doc.getElementById("zoomIncrement").value = NoSquintPrefs.prefs.getIntPref("zoomIncrement");
-        doc.getElementById("rememberSites").selectedIndex = NoSquintPrefs.prefs.getBoolPref("rememberSites") ? 0 : 1;
-        doc.getElementById("showStatus").checked = !NoSquintPrefs.prefs.getBoolPref("hideStatus");
-        doc.getElementById("wheelZoomEnabled").checked = NoSquintPrefs.prefs.getBoolPref("wheelZoomEnabled");
 
+        // Options tab
         var forget_cb = doc.getElementById("siteForget");
         var months = NoSquintPrefs.prefs.getIntPref("forgetMonths");
         forget_cb.checked = (months != 0);
@@ -32,13 +28,45 @@ var NoSquintPrefs = {
             doc.getElementById("siteForget-menu").value = months;
         forget_cb.addEventListener("CheckboxStateChange", NoSquintPrefs.forgetMonthsChecked, false);
         NoSquintPrefs.forgetMonthsChecked();
+        doc.getElementById("siteSanitize").checked = NoSquintPrefs.privacyBranch.getBoolPref("extensions-nosquint");
+        doc.getElementById("rememberSites").selectedIndex = NoSquintPrefs.prefs.getBoolPref("rememberSites") ? 0 : 1;
 
+        // Zooming tab
+        doc.getElementById("fullZoomLevel").value = NoSquintPrefs.prefs.getIntPref("fullZoomLevel");
+        doc.getElementById("textZoomLevel").value = NoSquintPrefs.prefs.getIntPref("textZoomLevel");
+        doc.getElementById("zoomIncrement").value = NoSquintPrefs.prefs.getIntPref("zoomIncrement");
+        doc.getElementById("zoomImages").checked = NoSquintPrefs.prefs.getBoolPref("zoomImages");
+        doc.getElementById("showStatus").checked = !NoSquintPrefs.prefs.getBoolPref("hideStatus");
+        doc.getElementById("wheelZoomEnabled").checked = NoSquintPrefs.prefs.getBoolPref("wheelZoomEnabled");
         doc.getElementById('primaryZoomMethod-menu').value = NoSquintPrefs.prefs.getBoolPref("fullZoomPrimary") ? "full" : "text";
-
         NoSquintPrefs.sitesRadioSelect();
+
+        // Color tab
+        for each (var [id, defcolor] in [['colorText', '#000000'], ['colorBackground', '#ffffff'], 
+                                         ['linksUnvisited', '#0000ee'], ['linksVisited', '#551a8b']]) {
+            var color = NoSquintPrefs.prefs.getCharPref(id);
+            var cb = doc.getElementById(id);
+            var picker = cb.parentNode.childNodes[1];
+            picker.color = color == '0' ? defcolor : color;
+            cb.addEventListener("CheckboxStateChange", NoSquintPrefs.colorChecked, false);
+            cb.checked = color == '0' ? false : true;
+            NoSquintPrefs.colorChecked(null, cb);
+        }
+        doc.getElementById('colorBackgroundImages').checked = NoSquintPrefs.prefs.getBoolPref("colorBackgroundImages");
+        doc.getElementById('linksUnderline').checked = NoSquintPrefs.prefs.getBoolPref("linksUnderline");
+
+        // Exceptions tab.
         NoSquintPrefs.parseExceptions();
         NoSquintPrefs.excListSelect();
     },
+
+    colorChecked: function(event, cb) {
+        cb = cb || this;
+        var picker = cb.parentNode.childNodes[1];
+        picker.disabled = !cb.checked;
+        picker.style.opacity = cb.checked ? 1.0 : 0.2;
+    },
+
 
     parseExceptions: function() {
         var exstr = NoSquintPrefs.prefs.getCharPref("exceptions");
@@ -46,7 +74,7 @@ var NoSquintPrefs = {
         var exlist = exstr.replace(/(^\s+|\s+$)/g, "").split(" ");
         for (var i = 0; i < exlist.length; i++) {
             if (exlist[i])
-                NoSquintPrefs.exceptionsListAdd(exlist[i], false);
+                NoSquintPrefs.exceptionsListAdd(exlist[i].replace(/%20/g, ' '), false);
         }
         NoSquintPrefs.doc.getElementById("exceptionsList")._changed = false;
     },
@@ -124,9 +152,13 @@ var NoSquintPrefs = {
         var item = listbox.selectedItem;
         var pattern = item.childNodes[0].getAttribute('label');
         var bundle = NoSquintPrefs.doc.getElementById("nosquint-prefs-bundle");
-        var new_pattern = prompt(bundle.getString('editPrompt'),  pattern, bundle.getString('editTitle'));
-        if (new_pattern != null && new_pattern != pattern) {
-            item.childNodes[0].setAttribute('label', new_pattern);
+        var prompts = Components.classes["@mozilla.org/embedcomp/prompt-service;1"]
+                      .getService(Components.interfaces.nsIPromptService);
+        var input = {value: pattern};
+        prompts.prompt(window, bundle.getString('editTitle'), bundle.getString('editPrompt'),
+                        input, null, {});
+        if (input.value != null && input.value != pattern) {
+            item.childNodes[0].setAttribute('label', input.value);
             listbox._changed = true;
         }
     },
@@ -170,39 +202,69 @@ var NoSquintPrefs = {
     close: function() {
         var doc = NoSquintPrefs.doc;
 
+        if (doc.getElementById("pattern").value != '')
+            /* User entered stuff in exception input but OK'd dialog without
+             * adding the exception.  We assume here the user actually _wanted_
+             * the exception to be added, so add it automatically.  This is
+             * a bit of do-what-I-mean behaviour.
+             */
+            NoSquintPrefs.buttonAddException();
+            
         var full_zoom_primary = doc.getElementById("primaryZoomMethod-menu").value == "full";
         var force_zoom = NoSquintPrefs.prefs.getBoolPref("fullZoomPrimary") != full_zoom_primary;
         NoSquintPrefs.prefs.setBoolPref("fullZoomPrimary", full_zoom_primary);
 
+        NoSquintPrefs.prefs.setBoolPref("zoomImages", doc.getElementById("zoomImages").checked);
         NoSquintPrefs.prefs.setBoolPref("hideStatus", !doc.getElementById("showStatus").checked);
         NoSquintPrefs.prefs.setBoolPref("wheelZoomEnabled", doc.getElementById("wheelZoomEnabled").checked);
-        NoSquintPrefs.prefs.setIntPref("zoomlevel", doc.getElementById("defaultZoomLevel").value);
+        NoSquintPrefs.prefs.setIntPref("fullZoomLevel", doc.getElementById("fullZoomLevel").value);
+        NoSquintPrefs.prefs.setIntPref("textZoomLevel", doc.getElementById("textZoomLevel").value);
         NoSquintPrefs.prefs.setIntPref("zoomIncrement", doc.getElementById("zoomIncrement").value);
         var val = doc.getElementById("rememberSites").selectedIndex == 1 ? false : true;
         NoSquintPrefs.prefs.setBoolPref("rememberSites", val);
+        NoSquintPrefs.privacyBranch.setBoolPref("extensions-nosquint", 
+                                                doc.getElementById("siteSanitize").checked)
 
 
-        var listbox = NoSquintPrefs.doc.getElementById("exceptionsList");
+        var listbox = doc.getElementById("exceptionsList");
         if (listbox._changed) {
             var exceptions = [];
             for (var i = 0; i < listbox.getRowCount(); i++) {
                 var item = listbox.getItemAtIndex(i);
                 var pattern = item.childNodes[0].getAttribute('label');
-                exceptions.push(pattern);
+                exceptions.push(pattern.replace(/ /g, '%20'));
             }
             NoSquintPrefs.prefs.setCharPref("exceptions", exceptions.join(' '));
         }
-        if (!NoSquintPrefs.doc.getElementById("siteForget").checked)
+        if (!doc.getElementById("siteForget").checked)
             NoSquintPrefs.prefs.setIntPref("forgetMonths", 0);
         else
-            NoSquintPrefs.prefs.setIntPref("forgetMonths", NoSquintPrefs.doc.getElementById("siteForget-menu").value);
+            NoSquintPrefs.prefs.setIntPref("forgetMonths", doc.getElementById("siteForget-menu").value);
 
-        if (!NoSquintPrefs.NoSquint)
+        // Colors
+        for each (var id in ['colorText', 'colorBackground', 'linksUnvisited', 'linksVisited']) {
+            var cb = doc.getElementById(id);
+            var picker = cb.parentNode.childNodes[1];
+            NoSquintPrefs.prefs.setCharPref(id, cb.checked ? picker.color : '0');
+        }
+        NoSquintPrefs.prefs.setBoolPref("colorBackgroundImages", 
+                                        doc.getElementById("colorBackgroundImages").checked);
+        NoSquintPrefs.prefs.setBoolPref("linksUnderline", 
+                                        doc.getElementById("linksUnderline").checked);
+
+        var NoSquint = NoSquintPrefs.NoSquint;
+        if (!NoSquint)
             return;
 
-        NoSquintPrefs.NoSquint.globalDialog = null;
+        NoSquint.globalDialog = null;
         if (force_zoom)
-            NoSquintPrefs.NoSquint.queueZoomAll();
+            NoSquint.queueZoomAll();
+        NoSquint.queueStyleAll();
+        NoSquint.updateStatus();
+
+        if (NoSquint.siteDialog)
+            NoSquint.siteDialog.setValues(NoSquint.siteDialog.browser, NoSquint.siteDialog.browser._noSquintSite);
+
     },
 
     cancel: function() {

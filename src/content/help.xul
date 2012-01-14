@@ -9,11 +9,11 @@
         ondialogaccept="return"
         id="nosquint-help-dialog"
         persist="width height"
-        width="600"
+        width="800"
         height="700"
         onload="NoSquintHelp.init(document)"> 
 
-    <script src="help.js" />
+    <script type="application/x-javascript" src="chrome://nosquint/content/help.js" />
 
     <dialogheader title="&ns.help.subtitle;" description="&ns.help.title;" />
     <groupbox flex="1">

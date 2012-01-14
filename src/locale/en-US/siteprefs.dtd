@@ -1,4 +1,7 @@
 <!ENTITY ns.pref.title "NoSquint Site Settings">
+<!ENTITY ns.pref.globalWarning "Values set here will be discarded when you leave this site because you are using global zoom and color settings for all sites.">
+<!ENTITY ns.pref.button.global.label "Global Settings">
+<!ENTITY ns.pref.button.global.accesskey "G">
 
 <!ENTITY ns.pref.fullZoom.label "Full zoom level">
 <!ENTITY ns.pref.textZoom.label "Text zoom level">

@@ -22,8 +22,8 @@ toolbar[iconsize="small"] #nosquint-button-reset {
       list-style-image: url("chrome://nosquint/skin/icon-reset-16.png");
 }
 
-#nosquint-menu-settings, #nosquint-view-menu-settings {
-      list-style-image: url("chrome://nosquint/skin/icon-statusbar-16.png");
+#nosquint-menu-settings {
+      list-style-image: url("chrome://nosquint/skin/icon-enlarge-16.png");
 }
 
 #nosquint-status-reset {

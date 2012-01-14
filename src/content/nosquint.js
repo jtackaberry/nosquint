@@ -1,61 +1,47 @@
 // chrome://browser/content/browser.xul
-// open dialogs will raise if already open
-
-/* Returns a list of lines from a URL (such as chrome://).  This function
- * is a WTF; how more obsure could it possibly be to read a damn file?
- */
-function readLines(aURL) {
-  var ioService = Components.classes["@mozilla.org/network/io-service;1"]
-                  .getService(Components.interfaces.nsIIOService);
-  var scriptableStream = Components.classes["@mozilla.org/scriptableinputstream;1"]
-                         .getService(Components.interfaces.nsIScriptableInputStream);
-
-  var channel = ioService.newChannel(aURL, null, null);
-  var input = channel.open();
-  scriptableStream.init(input);
-  var str = scriptableStream.read(input.available());
-  scriptableStream.close();
-  input.close();
-  return str.split("\n");
-} 
-
-/* Generate eddies in the space-time continuum. */
-function debug(msg) {
-    dump("[nosquint] " + msg + "\n");
-}
-
 var NoSquint = {
 
     TLDs: null,                     // Hash of multi-level TLDs; shared between windows
     prefs: null,                    // Prefs service rooted at extensions.nosquint.
-    mousePrefs: null,               // Prefs service rooted at mousewheel.withcontrolkey
+    browserZoomPrefs: null,         // Prefs service rooted at browser.zoom
     initialized: false,             // True if init() was called
-    prefsRecursion: 0,              // Recursion level in observe()
     saveTimer: null,                // Timer for saveSiteList()
     zoomAllTimer: null,             // Timer for zoomAll()
+    styleAllTimer:null,             // Timer for styleAll()
     pruneTimer: null,               // Timer for pruneSites()
     sitesDirty: false,              // True when sites list needs saving
     ignoreNextSitesChange: false,   // ignores next update to sites pref
-    zoomManagerTimeout: null,       // timeout for ZoomManager.zoom setter
     globalDialog: null,             // NoSquintPrefs object if global prefs dialog open
     siteDialog: null,               // NoSquintSitePrefs object if site prefs dialog open
+    observer: null,                 // Instance attached to observer interface
+    origSiteSpecific: null,         // Original value of browser.zoom.siteSpecific
 
     /* Prefs */
-    // Sites hash is keyed on site name, with value being [level, timestamp, visits]
+    // Sites hash is keyed on site name, with value being:
+    //  [textlevel, timestamp, visits, fulllevel, textcolor, bgcolor, nobgimages, 
+    //   linkunvis, linkvis, linkunderline]
     sites: {},                      // extensions.nosquint.sites
     exceptions: [],                 // extensions.nosquint.exceptions
-    defaultZoomLevel: 120,          // extensions.nosquint.zoomlevel
+    defaultFullZoomLevel: 120,      // extensions.nosquint.fullZoomLevel
+    defaultTextZoomLevel: 100,      // extensions.nosquint.textZoomLevel
     saveDelay: 5000,                // extensions.nosquint.sitesSaveDelay
     zoomIncrement: 10,              // extensions.nosquint.zoomIncrement
     rememberSites: true,            // extensions.nosquint.rememberSites
-    wheelZoomEnabled: false,        // extensions.nosquint.wheelZoomEnabled
+    zoomImages: true,               // extensions.nosquint.zoomImages
+    wheelZoomEnabled: true,         // extensions.nosquint.wheelZoomEnabled
+    wheelZoomInvert: false,         // extensions.nosquint.wheelZoomInvert
     hideStatus: false,              // extensions.nosquint.hideStatus
     forgetMonths: 6,                // extensions.nosquint.forgetMonths
     fullZoomPrimary: false,         // extensions.nosquint.fullZoomPrimary
+    colorText: '0',                 // extensions.nosquint.colorText
+    colorBackground: '0',           // extensions.nosquint.colorBackground
+    colorBackgroundImages: false,   // extensions.nosquint.colorBackgroundImages
+    linksUnvisited: '0',            // extensions.nosquint.linksUnvisited
+    linksVisited: '0',              // extensions.nosquint.linksVisited
+    linksUnderline: false,          // extensions.nosquint.linksUnderline
 
 
     init: function() {
-        debug("start init");
         NoSquint.updateZoomMenu();
         if (NoSquint.initialized)
             return;
@@ -68,62 +54,90 @@ var NoSquint = {
          * this prevents us from parsing the ~2000 line file each time a window
          * is opened.  If not, read it from the two-level-tlds file.
          */
-        var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"]
-                           .getService(Components.interfaces.nsIWindowMediator);
-        var windows = wm.getEnumerator("navigator:browser");
-        var win;
-        while (win = windows.getNext()) {
-            if (win._noSquintTLDs) {
-                // Found, grab a reference to the object.
-                NoSquint.TLDs = window._noSquintTLDs = win._noSquintTLDs;
-                break;
-            }
-        }
+        NoSquint.TLDs = window_get_global('tlds');
         if (NoSquint.TLDs == null) {
             // TLDs list not found in any existing window.  Load the stored list,
             // which is borrowed from http://www.surbl.org/two-level-tlds
             lines = readLines('chrome://nosquint/content/two-level-tlds');
-            window._noSquintTLDs = NoSquint.TLDs = {};
+            //window._noSquintTLDs = NoSquint.TLDs = {};
+            NoSquint.TLDs = {};
             for (var i in lines)
                 NoSquint.TLDs[lines[i]] = true;
+            window_set_global('tlds', NoSquint.TLDs);
+            
         }
+        window._noSquint = NoSquint;
 
-        NoSquint.initPrefs();
+        NoSquint.observer = new NoSquintObserver();
+        NoSquint.observer.watcher = {
+            onEnterPrivateBrowsing: function() {
+                // Switching the private browsing mode.  Store any current pending
+                // changes now.
+                if (NoSquint.sitesDirty)
+                    NoSquint._realSaveSiteList(true);
+                // Save current (non-private) site data for when we exit private
+                // browsing.
+                NoSquint._sites_save = NoSquint.cloneSites();
+            },
+
+            onExitPrivateBrowsing: function() {
+                // Restore previously saved site data and rezoom/style all tabs.
+                NoSquint.sites = NoSquint._sites_save;
+                NoSquint._sites_save = null;
+                NoSquint.zoomAll();
+                NoSquint.styleAll();
+            }
+        };
+
+        // Init prefs, parsing site list.
+        NoSquint.initPrefs(true);
+
+        if (NoSquint.observer.inPrivateBrowsing)
+            NoSquint.observer.watcher.onEnterPrivateBrowsing();
 
         window.addEventListener("DOMMouseScroll", NoSquint.handleScrollWheel, false); 
+        window.addEventListener("resize", NoSquint.handleResize, false);
         gBrowser.tabContainer.addEventListener("TabOpen", NoSquint.handleNewTab, false);
         gBrowser.tabContainer.addEventListener("TabClose", NoSquint.handleCloseTab, false);
         gBrowser.tabContainer.addEventListener("TabSelect", NoSquint.handleTabChanged, false);
 
         // Zoom any tabs anther extension may have opened and attach listeners to them.
         NoSquint.zoomAll(true);
-
+        // Style all open tabs.
+        NoSquint.styleAll();
         var t1 = new Date().getTime();
         debug("initialization took " + (t1-t0) + " ms");
+        //NoSquint.openGlobalPrefsDialog();
     },
 
     destroy: function() {
         NoSquint.prefs.removeObserver("", NoSquint);
-        NoSquint.mousePrefs.removeObserver("", NoSquint);
+        NoSquint.browserZoomPrefs.removeObserver("", NoSquint);
 
-        if (NoSquint.sitesDirty) {
+        if (NoSquint.sitesDirty)
             NoSquint._realSaveSiteList();
-        }
 
         /* Even though we've removed the pref observers, they lamely still get
-         * invoked during setIntPref below; setting prefs to null here prevents
+         * invoked during setBoolPref below; setting prefs to null here prevents
          * full entry into observe().  We're done with it now anyway.
          */
         NoSquint.prefs = null;
-        // Restore mousewheel.withcontrolkey.action to default if wheel zoom enabled.
-        if (NoSquint.mousePrefs && NoSquint.wheelZoomEnabled && NoSquint.mousePrefs.getIntPref("action") == 0)
-            NoSquint.mousePrefs.setIntPref("action", 5);
+        // Reenable browser.zoom.siteSpecific
+        NoSquint.browserZoomPrefs.setBoolPref("siteSpecific", NoSquint.origSiteSpecific);
 
         gBrowser.tabContainer.removeEventListener("TabOpen", NoSquint.handleNewTab, false);
         gBrowser.tabContainer.removeEventListener("TabClose", NoSquint.handleCloseTab, false);
         gBrowser.tabContainer.removeEventListener("TabSelect", NoSquint.handleTabChanged, false);
+        window.removeEventListener("DOMMouseScroll", NoSquint.handleScrollWheel, false); 
+        window.removeEventListener("resize", NoSquint.handleResize, false);
     },
 
+    cloneSites: function() {
+        var sites = {};
+        for (var site in NoSquint.sites)
+            sites[site] = NoSquint.sites[site].slice();
+        return sites;
+    },
 
     /* Updates View | Zoom menu to replace the default Zoom In/Out menu
      * items with Primary Zoom In/Out and Secondary Zoom In/Out.  Also the
@@ -195,10 +209,19 @@ var NoSquint = {
 
     /* Handlers for toolar buttons */
     buttonEnlarge: function(event) {
+        var browser = getBrowser().mCurrentBrowser;
+        if (is_image(browser))
+            return browser._noSquintFit ? true : NoSquint.enlargeFullZoom();
         event.shiftKey ? NoSquint.cmdEnlargeSecondary() : NoSquint.cmdEnlargePrimary();
     },
     buttonReduce: function(event) {
+        var browser = getBrowser().mCurrentBrowser;
+        if (is_image(browser))
+            return browser._noSquintFit ? true : NoSquint.reduceFullZoom();
         event.shiftKey ? NoSquint.cmdReduceSecondary() : NoSquint.cmdReducePrimary();
+    },
+    buttonReset: function(event) {
+        NoSquint.cmdReset();
     },
 
     /* Handlers for commands defined in overlay.xul */
@@ -232,23 +255,26 @@ var NoSquint = {
     },
 
     enlargeTextZoom: function() {
-        // FIXME: do we want to update any other tabs of pages in this site?
-        getBrowser().mCurrentBrowser.markupDocumentViewer.textZoom += (NoSquint.zoomIncrement / 100.0);
+        var mdv = getBrowser().mCurrentBrowser.markupDocumentViewer;
+        mdv.textZoom = Math.round(mdv.textZoom * 100.0 + NoSquint.zoomIncrement) / 100.0;
         NoSquint.saveCurrentZoom();
         NoSquint.updateStatus();
     },
     reduceTextZoom: function() {
-        getBrowser().mCurrentBrowser.markupDocumentViewer.textZoom -= (NoSquint.zoomIncrement / 100.0);
+        var mdv = getBrowser().mCurrentBrowser.markupDocumentViewer;
+        mdv.textZoom = Math.round(mdv.textZoom * 100.0 - NoSquint.zoomIncrement) / 100.0;
         NoSquint.saveCurrentZoom();
         NoSquint.updateStatus();
     },
     enlargeFullZoom: function() {
-        getBrowser().mCurrentBrowser.markupDocumentViewer.fullZoom += (NoSquint.zoomIncrement / 100.0);
+        var mdv = getBrowser().mCurrentBrowser.markupDocumentViewer;
+        mdv.fullZoom = Math.round(mdv.fullZoom * 100.0 + NoSquint.zoomIncrement) / 100.0;
         NoSquint.saveCurrentZoom();
         NoSquint.updateStatus();
     },
     reduceFullZoom: function() {
-        getBrowser().mCurrentBrowser.markupDocumentViewer.fullZoom -= (NoSquint.zoomIncrement / 100.0);
+        var mdv = getBrowser().mCurrentBrowser.markupDocumentViewer;
+        mdv.fullZoom = Math.round(mdv.fullZoom * 100.0 - NoSquint.zoomIncrement) / 100.0;
         NoSquint.saveCurrentZoom();
         NoSquint.updateStatus();
     },
@@ -272,11 +298,14 @@ var NoSquint = {
         }
     },
 
-    /* Left or right click on the status panel. */
+    /* Handle left/middle/right click on the status panel. */
     statusPanelClick: function(event) {
         if (event.button == 0)
             // Left click, open site prefs.
             return NoSquint.openSitePrefsDialog();
+        else if (event.button == 1)
+            // Middle click, open global prefs.
+            return NoSquint.openGlobalPrefsDialog();
 
         /* Right click.  Setup the context menu according to the current
          * browser tab: the site name is set, and the appropriate radio 
@@ -316,7 +345,7 @@ var NoSquint = {
      */
     openSitePrefsDialog: function() {
         var browser = gBrowser.selectedBrowser;
-        var site = NoSquint.getSiteFromURI(browser.currentURI);
+        var site = NoSquint.getSiteFromBrowser(browser);
         if (!site)
             return;
         if (NoSquint.siteDialog) {
@@ -334,40 +363,46 @@ var NoSquint = {
             return NoSquint.globalDialog.dialog.focus();
 
         var browser = gBrowser.selectedBrowser;
-        var site = NoSquint.getSiteFromURI(browser.currentURI);
-        var level = NoSquint.getLevelForSite(site)[0] || "default";
-        var url = browser.currentURI.asciiHost + browser.currentURI.path;
+        var host = browser.currentURI.asciiHost;
+        try {
+            if (browser.currentURI.port > 0)
+                host += ':' + browser.currentURI.port;
+        } catch (err) {};
         window.openDialog("chrome://nosquint/content/globalprefs.xul", "NoSquint Settings", "chrome", 
-                          site, level, url, NoSquint);
+                          NoSquint, host + browser.currentURI.path);
     },
 
     /* Apply increase/decrease for ctrl-mousewheel */
     handleScrollWheel: function(event) {
-        if (!event.ctrlKey || !NoSquint.wheelZoomEnabled)
+        if (!event.ctrlKey)
             return;
-        var browser = gBrowser.selectedBrowser;
-        var text = full = false;
-        var increment = NoSquint.zoomIncrement * (event.detail < 0 ? 1 : -1);
+        if (NoSquint.wheelZoomEnabled) {
+            var browser = gBrowser.selectedBrowser;
+            var text = full = false;
+            var increment = NoSquint.zoomIncrement * (event.detail < 0 ? 1 : -1);
+            var img = is_image(browser);
+                
+            if (NoSquint.wheelZoomInvert)
+                increment *= -1;
 
-        if (NoSquint.fullZoomPrimary && !event.shiftKey || !NoSquint.fullZoomPrimary && event.shiftKey)
-            full = Math.round((browser.markupDocumentViewer.fullZoom * 100) + increment);
-        else
-            text = Math.round((browser.markupDocumentViewer.textZoom * 100) + increment);
+            if (NoSquint.fullZoomPrimary && !event.shiftKey || !NoSquint.fullZoomPrimary && event.shiftKey || img)
+                full = Math.round((browser.markupDocumentViewer.fullZoom * 100) + increment);
+            else
+                text = Math.round((browser.markupDocumentViewer.textZoom * 100) + increment);
 
-        NoSquint.zoom(browser, text, full);
-        NoSquint.saveCurrentZoom();
-
+            if (!img || !browser._noSquintFit) {
+                NoSquint.zoom(browser, text, full);
+                if (browser._noSquintSite)
+                    NoSquint.saveCurrentZoom();
+            }
+        }
         event.stopPropagation();
         event.preventDefault();
     },
 
     handleTabChanged: function(event) {
-        if (gBrowser.selectedBrowser._noSquintified) {
-            // ZoomManager.zoom was set somewhere internally in FF.  Abort
-            // the pending zoom.
-            NoSquint.abortPendingZoomManager();
+        if (gBrowser.selectedBrowser._noSquintified)
             NoSquint.updateStatus();
-        }
     },
 
     handleNewTab: function(event) {
@@ -378,28 +413,6 @@ var NoSquint = {
         var browser = event.target.linkedBrowser;
         browser.removeProgressListener(browser._noSquintListener);
     },
-
-    /* In init.js, we hook the setter for ZoomManager.zoom to have it
-     * queue the requested zoom rather than apply it immediately.  This
-     * gives handleTabChanged() above and our custom ProgressListener an
-     * opportunity to abort the pending zoom, in order to fully bypass
-     * FF's new internal per-site zoom mechanism.
-     *
-     * If no ZoomManager zoom is pending, then the next zoom via the
-     * ZoomManager will be eaten.
-     */
-    abortPendingZoomManager: function() {
-        if (NoSquint.zoomManagerTimeout != null && NoSquint.zoomManagerTimeout != false) {
-            debug("aborting queued ZoomManager zoom");
-            clearTimeout(NoSquint.zoomManagerTimeout);
-            NoSquint.zoomManagerTimeout = null;
-            ZoomManager._nosquintPendingZoom = null;
-        } else {
-            debug("aborting next ZoomManager zoom");
-            NoSquint.zoomManagerTimeout = false;
-        }
-    },
-
 
     /* Given a FQDN, returns only the base domain, and honors two-level TLDs.
      * So for example, www.foo.bar.com returns bar.com, or www.foo.bar.co.uk
@@ -432,7 +445,7 @@ var NoSquint = {
          * match later.  Hostname and path components are processed in
          * separate calls; re_star and re_dblstar define the regexp syntax
          * for * and ** wildcards for this pattern.  (This is because
-         * wildcards have different semantics for hos vs path.)
+         * wildcards have different semantics for host vs path.)
          *
          * Function returns a list of [length, pattern, sub] where length
          * is the number of literal (non-wildcard) characters, pattern is
@@ -470,7 +483,7 @@ var NoSquint = {
                 else
                     sub.push('$' + n++);
             }
-            return [ length, pattern.join(''), sub.join('') ];
+            return [length, pattern.join(''), sub.join('')];
         }
 
         var exceptions = [];
@@ -479,17 +492,31 @@ var NoSquint = {
             if (!exc)
                 continue;
             // Escape metacharacters except *
-            exc = exc.replace(/([^\w*\[\]])/g, '\\$1');
+            exc = exc.replace(/([^\w:*\[\]])/g, '\\$1');
             // Split into host and path parts, and regexpify separately.
-            var [_, exc_host, exc_path] = exc.match(/([^\/]+)(\\\/.*|$)/);
-            var [ len_host, re_host, sub_host] = regexpify(exc_host, '[^.:/]+', '.*');
-            var [ len_path, re_path, sub_path] = regexpify(exc_path, '[^/]+', '.*');
-            exceptions.push([len_host * 1000 + len_path, re_host, sub_host, re_path, sub_path]);
+            var [_, exc_host, exc_path] = exc.match(/([^\/]*)(\\\/.*|$)/);
+            var [len_host, re_host, sub_host] = regexpify(exc_host, '[^.:/]+', '.*');
+            var [len_path, re_path, sub_path] = regexpify(exc_path, '[^/]+', '.*');
+            if (exc_host.search(':') == -1)
+                re_host += '(:\\d+)';
+
+            debug("Parse exception: exc_host=" + exc_host + ", re_host=" + re_host + ", sub_host=" + sub_host + ", exc_path=" + exc_path + ", re_path=" + re_path + ", sub_path=" + sub_path);
+            exceptions.push([len_host * 1000 + len_path, exc_host, re_host, sub_host, re_path, sub_path]);
         }
         // Sort the exceptions such that the ones with the highest weights
         // (that is, the longest literal lengths) appear first.
         exceptions.sort(function(a, b) { return b[0] - a[0]; });
         return exceptions;
+    },
+    
+
+    /* Given a browser, returns the site name.  Does not use the cached
+     * browser._noSquintSite value.
+     */
+    getSiteFromBrowser: function(browser) {
+        if (is_chrome(browser))
+            return null;
+        return NoSquint.getSiteFromURI(browser.currentURI);
     },
 
     /* Given a URI, returns the site name, as computed based on user-defined
@@ -503,7 +530,20 @@ var NoSquint = {
 
         var uri_host = URI.asciiHost;
         var uri_path = URI.path;
+
+        try {
+            var uri_port = URI.port < 0 ? 0 : URI.port;
+        } catch (err) {
+            var uri_port = '0';
+        }
+
         var base = NoSquint.getBaseDomainFromHost(uri_host);
+        if (!base && !uri_host)
+            // file:// url, use base as /
+            base = '/';
+
+        uri_host += ':' + uri_port;
+
         var match = null;
         
         /* Iterate over each exception, trying to match it with the URI.
@@ -511,14 +551,16 @@ var NoSquint = {
          * sorted with highest weights first.
          */
         for (var i in NoSquint.exceptions) {
-            var [weight, re_host, sub_host, re_path, sub_path] = NoSquint.exceptions[i];
-            if (re_host != '([^.:/]+)')
-                var m1 = uri_host.match(new RegExp('(' + re_host + ')$'));
-            else
-                // Single star is base name
-                var m1 = [null, base];
+            var [weight, exc_host, re_host, sub_host, re_path, sub_path] = NoSquint.exceptions[i];
+            if (re_host.substr(0, 11) == '([^.:/]+)(:') // exc_host == *[:...]
+                // Single star is base name, so match just that, plus any port spec
+                // that's part of the exception.
+                re_host = '(' + base + ')' + re_host.substr(9);
 
+            var m1 = uri_host.match(new RegExp('(' + re_host + ')$'));
             var m2 = uri_path.match(new RegExp('^(' + re_path + ')'));
+
+            //debug("check site: host=" + uri_host + ", port=" + uri_port+ ", path=" + uri_path + ", base=" + base + " === exception info: re_host=" + re_host + ", sub_host=" + sub_host + ", re_path=" + re_path + ", sub_path=" + sub_path + " === results: m1=" + m1 + ", m2=" + m2);
 
             if (!m1 || !m2)
                 // No match
@@ -530,7 +572,7 @@ var NoSquint = {
             break;
         }
         var t1 = new Date().getTime();
-        debug("getSiteFromURI took " + (t1-t0) + " ms");
+        debug("getSiteFromURI took " + (t1-t0) + " ms: " + (match ? match : base));
 
         return match ? match : base;
     },
@@ -539,10 +581,22 @@ var NoSquint = {
     /* Attaches our custom ProgressListener to the given browser. */
     attach: function(browser) {
         var listener = new ProgressListener(browser);
+        debug('Attaching new progress listener');
         browser.addProgressListener(listener, Components.interfaces.nsIWebProgress.NOTIFY_STATE_DOCUMENT);
         browser._noSquintListener = listener;
         // Zoom browser to the appropriate levels for the current URI.
         NoSquint.zoom(browser, null, null);
+
+        browser._noSquintStyles = [];
+        // Attach stylesheets to new frames as they load.
+        function handle_frame_load(event) {
+            var doc = event.target.contentWindow.document;
+            var head = doc.getElementsByTagName("head");
+            var style = browser._noSquintStyles[0].cloneNode(true);
+            browser._noSquintStyles.push(style);
+            head[0].appendChild(style);
+        }
+        browser.addEventListener("DOMFrameContentLoaded", handle_frame_load, true);
     },
     
     /* Updates the status panel and tooltip to reflect current site name
@@ -555,19 +609,97 @@ var NoSquint = {
         var browser = gBrowser.selectedBrowser;
         var text = Math.round(browser.markupDocumentViewer.textZoom * 100);
         var full = Math.round(browser.markupDocumentViewer.fullZoom * 100);
-        var [ text_default, full_default ] = NoSquint.getZoomDefaults();
+        var [text_default, full_default] = NoSquint.getZoomDefaults();
 
         var e = document.getElementById('nosquint-status')
-        if (NoSquint.fullZoomPrimary)
-            e.label = full + "%" + (text == text_default ? "" : (" / " + text + "%"));
-        else
-            e.label = text + "%" + (full == full_default ? "" : (" / " + full + "%"));
+        if (browser._noSquintSite) {
+            if (NoSquint.fullZoomPrimary)
+                e.label = full + "%" + (text == 100 ? "" : (" / " + text + "%"));
+            else
+                e.label = text + "%" + (full == 100 ? "" : (" / " + full + "%"));
+            document.getElementById("nosquint-status-tooltip-site").value = browser._noSquintSite.replace(/%20/g, ' ');
+            document.getElementById("nosquint-status-tooltip-full").value = full + "%";
+            document.getElementById("nosquint-status-tooltip-text").value = text + "%";
 
-        var site = browser._noSquintSite ? browser._noSquintSite : "(none)";
-        document.getElementById("nosquint-status-tooltip-site").value = site;
-        document.getElementById("nosquint-status-tooltip-full").value = full + "%";
-        document.getElementById("nosquint-status-tooltip-text").value = text + "%";
+            var style = NoSquint.getStyleForBrowser(browser);
+            var label = document.getElementById('nosquint-status-tooltip-textcolor');
+            label.style.color = style.text == '0' ? 'inherit' : style.text;
+            label.style.backgroundColor = style.bg == '0' ? 'inherit' : style.bg;
+            label.value = style.text == '0' && style.bg == '0' ? 'Site Controlled' : 'Sample';
+
+            var vis = document.getElementById('nosquint-status-tooltip-vis-link');
+            var unvis = document.getElementById('nosquint-status-tooltip-unvis-link');
+            unvis.value = vis.value = "";
+            vis.style.color = vis.style.textDecoration = "inherit";
+            unvis.style.color = unvis.style.textDecoration = "inherit";
+
+            if (style.unvisited == '0' && style.visited == '0')
+                unvis.value = "Site Controlled";
+            else {
+                if (style.unvisited != '0') {
+                    unvis.value = "Unvisited";
+                    unvis.style.color = style.unvisited;
+                    unvis.style.textDecoration = style.underline ? 'underline' : 'inherit';
+                }
+                if (style.visited != '0') {
+                    vis.value = "Unvisited";
+                    vis.style.color = style.visited;
+                    vis.style.textDecoration = style.derline ? 'underline' : 'inherit';
+                }
+            }
+
+            document.getElementById("nosquint-status-tooltip").style.display = '';
+            e.style.fontStyle = e.style.color = 'inherit';
+        } else {
+            document.getElementById("nosquint-status-tooltip").style.display = 'none';
+            e.label = 'N/A';
+            /* LAME: The documentation for statusbarpanel says there is a
+             * disabled attribute.  The DOM Inspector says otherwise.  So we
+             * must simulate the disabled look.
+             */
+            e.style.color = '#777';
+            e.style.fontStyle = 'italic';
+        }
     },
+
+    /* Gets the style parameters for the given site name.
+     */
+    getStyleForSite: function(site) {
+        if (site && NoSquint.sites[site]) {
+            var s = NoSquint.sites[site];
+            return { 
+                text: s[4],
+                bg: s[5],
+                bgimages: s[6],
+                unvisited: s[7],
+                visited: s[8],
+                underline: s[9]
+            };
+        }
+        return null;
+    },
+
+    getStyleForBrowser: function(browser) {
+        if (!browser._noSquintSite)
+            browser._noSquintSite = NoSquint.getSiteFromBrowser(browser);
+        if (NoSquint.rememberSites)
+            var style = NoSquint.getStyleForSite(browser._noSquintSite);
+        else
+            var style = {text: '0', bg: '0', bgimages: false, unvisited: '0', visited: '0', underline: false};
+        return NoSquint.applyStyleDefaults(style);
+    },
+
+    applyStyleDefaults: function(style) {
+        return {
+            text: (style && style.text != '0') ? style.text : NoSquint.colorText,
+            bg: (style && style.bg != '0') ? style.bg : NoSquint.colorBackground,
+            bgimages: (style && style.bgimages) ? style.bgimages : NoSquint.colorBackgroundImages,
+            unvisited: (style && style.unvisited != '0') ? style.unvisited : NoSquint.linksUnvisited,
+            visited: (style && style.visited != '0') ? style.visited : NoSquint.linksVisited,
+            underline: (style && style.underline) ? style.underline : NoSquint.linksUnderline
+        };
+    },
+
 
     /* Gets the levels for the given site name.  (Note, this is the site name
      * as gotten from getSiteFromURI(), not the URI itself.)  Returns a
@@ -580,29 +712,31 @@ var NoSquint = {
         return [null, null];
     },
 
+
     /* Returns a 2-tuple [text_default, full_default] representing the default
      * zoom levels.
      */
     getZoomDefaults: function() {
-        return [ NoSquint.fullZoomPrimary ? 100 : NoSquint.defaultZoomLevel,
-                 NoSquint.fullZoomPrimary ? NoSquint.defaultZoomLevel : 100 ];
+        return [NoSquint.defaultTextZoomLevel, NoSquint.defaultFullZoomLevel];
     },
 
-    /* Returns a 2-tuple [text_default, full_default] zoom levels for the 
-     * current browser.
+    /* Returns a 2-tuple [text, full] zoom levels for the given
+     * browser.
      */
     getLevelForBrowser: function(browser) {
         if (!browser._noSquintSite)
-            browser._noSquintSite = NoSquint.getSiteFromURI(browser.currentURI);
+            browser._noSquintSite = NoSquint.getSiteFromBrowser(browser);
 
-        var [ text_default, full_default ] = NoSquint.getZoomDefaults();
+        var [text_default, full_default] = NoSquint.getZoomDefaults();
 
         if (NoSquint.rememberSites) {
             var site = browser._noSquintSite;
-            var [ text, full ] = NoSquint.getLevelForSite(site);
-            return [ text || text_default, full || full_default ];
+            var [text, full] = NoSquint.getLevelForSite(site);
+            return [text || text_default, full || full_default];
         }
-        return [ text_default, full_default ];
+
+        // In global zoom mode, so return the global default levels.
+        return [text_default, full_default];
     },
 
 
@@ -615,11 +749,14 @@ var NoSquint = {
             return;
 
         if (text == null || full == null) {
-            var [ site_text, site_full ] = NoSquint.getLevelForBrowser(browser);
+            var [site_text, site_full] = NoSquint.getLevelForBrowser(browser);
             if (text == null)
                 text = text || site_text;
             if (full == null)
                 full = full || site_full;
+            // Only zoom web content, not chrome or plugins (e.g. PDF)
+            if (!browser._noSquintSite)
+                [text, full] = [100, 100];
         }
 
         debug("set zoom: text=" + text + ", full=" + full);
@@ -637,12 +774,14 @@ var NoSquint = {
      * for the current URIs of each browser.  If 'attach' is true, then
      * ProgressListeners are attached to each browser as well.  This is
      * useful on initialization, where we can hook into any tabs that may
-     * have been open prior to initialization.
+     * have been opened prior to initialization.
      */
-    zoomAll: function(attach) {
+    zoomAll: function(attach, site) {
         debug("zooming all tabs; attach listeners = " + attach);
         for (var i = 0; i < gBrowser.browsers.length; i++) {
             var browser = gBrowser.browsers[i];
+            if (site && site != browser._noSquintSite)
+                continue;
             if (browser._noSquintSite)
                 delete browser._noSquintSite;
             NoSquint.zoom(browser, null, null);
@@ -658,27 +797,152 @@ var NoSquint = {
      * multiple times, such as in the case of multiple preferences being
      * updated at once.
      */
-    queueZoomAll: function() {
-        if (!NoSquint.zoomAllTimer)
-            NoSquint.zoomAllTimer = setTimeout(function() { NoSquint.zoomAll(false); }, 1);
+    queueZoomAll: function(site, delay) {
+        if (!delay)
+            delay = 1;
+        if (NoSquint.zoomAllTimer)
+            clearTimeout(NoSquint.zoomAllTimer);
+        NoSquint.zoomAllTimer = setTimeout(function() { NoSquint.zoomAll(false, site); }, delay);
     },
+
+    queueStyleAll: function(site, delay) {
+        if (!delay)
+            delay = 1;
+        if (NoSquint.styleAllTimer)
+            clearTimeout(NoSquint.styleAllTimer);
+        NoSquint.styleAllTimer = setTimeout(function() { NoSquint.styleAll(site); }, delay);
+    },
+
+    styleAll: function(site) {
+        for (var i = 0; i < gBrowser.browsers.length; i++) {
+            var browser = gBrowser.browsers[i];
+            if (site && site != browser._noSquintSite || is_chrome(browser))
+                continue;
+            debug("STYLING: " + browser._noSquintSite);
+            NoSquint.style(browser);
+        }
+    },
+
+    handleResize: function(event) {
+        if (event.eventPhase != 2)
+            return;
+        for (var i = 0; i < gBrowser.browsers.length; i++) {
+            var browser = gBrowser.browsers[i];
+            if (browser._noSquintFit != undefined)
+                NoSquint.adjustImage(null, browser, -1);
+        }
+    },
+
+    adjustImage: function(event, browser, fit) {
+        if (event) {
+            event.stopPropagation();
+            event.preventDefault();
+        }
+        var doc = browser.docShell.document;
+        var img = doc.body.firstChild;
+        var styleobj = browser._noSquintStyles[0];
+        fit = fit == undefined ? !browser._noSquintFit : browser._noSquintFit;
+        // is any dimension of the image bigger than the window?
+        var is_bigger = img.naturalWidth >= doc.body.clientWidth || img.naturalHeight >= doc.body.clientHeight;
+        // is the aspect of the image larger than the window (i.e. is it wider)?
+        var is_wider = img.naturalWidth/img.naturalHeight > doc.body.clientWidth/doc.body.clientHeight;
+
+        var cursor = (!fit && !is_bigger) || (fit && is_bigger) ? "-moz-zoom-in" : "-moz-zoom-out";
+        var css = "* { cursor: " + cursor + " !important; }";
+        css += "img { cursor: " + cursor + " !important;";
+        css += "width: " + (fit && is_wider? "100%" : "auto") + " !important;";
+        css += "height: " + (fit && !is_wider ? "100%" : "auto") + " !important;}";
+        debug("Fitting: " + fit + ", css: " + css);
+        var title = doc.title.replace(/ *- Scaled \(\d+%\)$/, '');
+        if (fit) {
+            var ratio = is_wider ? doc.body.clientWidth / img.naturalWidth :
+                                   doc.body.clientHeight / img.naturalHeight;
+            debug("Scale: wider=" + is_wider + ", img=" + img.naturalWidth + "x" + img.naturalHeight+ ", window=" + doc.body.clientWidth + "x" + doc.body.clientHeight);
+            title += ' - Scaled (' + parseInt(ratio * 100) + '%)';
+            debug(title);
+        }
+        doc.title = title;
+        styleobj.textContent = css;
+        browser._noSquintFit = fit;
+    },
+
+
+    style: function(browser, style) {
+        var doc = browser.docShell.document;
+        var css = '';
+        if (!doc.documentElement)
+            // Nothing to style; chrome?
+            return;
+
+        if (browser._noSquintStyles.length == 0) {
+            // Create new style element for this document.
+            var styleobj = doc.createElementNS("http://www.w3.org/1999/xhtml", "style");
+            browser._noSquintStyles.push(styleobj);
+            doc.documentElement.appendChild(styleobj);
+        }
+
+        if (is_image(browser)) {
+            if (doc.body.firstChild) {
+                browser._noSquintFit = false;
+                NoSquint.adjustImage(null, browser, NoSquint.zoomImages ? undefined : -1);
+                doc.addEventListener("click", function(event) { 
+                    if (event.button == 0)
+                        return NoSquint.adjustImage(event, browser);
+                }, true);
+            }
+            return;
+        }
+
+        if (!style)
+            // No style specified, find for this browser.
+            style = NoSquint.getStyleForBrowser(browser);
+
+        if (style.text != '0' || style.bg != '0' || style.bgimages || 
+            style.unvisited != '0' || style.visited != '0' || style.underline) {
+            css = 'body,p,div,span,blockquote,h1,h2,h3,h4,h5,table,tr,th,td,iframe,a {';
+            if (style.text != '0')
+                css += 'color: ' + style.text + ' !important;';
+            if (style.bg != '0')
+                css += 'background-color: ' + style.bg + ' !important;';
+            if (style.bgimages)
+                css += 'background-image: none !important;';
+            css += '}\n';
+
+            if (style.unvisited != '0')
+                css += 'a:link { color: ' + style.unvisited + ' !important; }\n';
+            if (style.visited != '0')
+                css += 'a:visited { color: ' + style.visited + ' !important; }\n';
+            if (style.underline)
+                css += 'a { text-decoration: underline !important; }\n';
+        }
+        debug("Applying style [" + doc.documentElement + "]:" + css);
+
+        // Iterate over all style elements for this document (one element for each
+        // frame/iframe);
+        for each (var style in browser._noSquintStyles)
+            style.textContent = css;
+    },
+
 
     /* Callback from custom ProgressListener when the given browser's URI 
      * has changed.
      */
     locationChanged: function(browser, uri) {
-        var site = NoSquint.getSiteFromURI(uri);
+        var site = NoSquint.getSiteFromBrowser(browser);
+        debug("locationChanged: from " + browser._noSquintSite + " to " + site + ", uri=" + uri.spec);
         if (site != browser._noSquintSite)
             // Site accessed; update timestamp on new site.
-            NoSquint.updateSiteList(site, null, true);
+            NoSquint.updateSiteList(site, null, null, true);
+        else if (!NoSquint.rememberSites)
+            // We're in global mode and still on the same site, so do not
+            // rezoom, allowing us to maintain any temporary user levels.
+            return;
 
         browser._noSquintSite = site;
-        var [ text, full ] = NoSquint.getLevelForBrowser(browser);
-        NoSquint.zoom(browser, text, full);
+        NoSquint.zoom(browser);
         if (NoSquint.siteDialog && NoSquint.siteDialog.browser == browser)
             NoSquint.siteDialog.setValues(browser, site);
     },
-
 
     /* Called periodically (on startup, and once a day after that) in order to
      * remove remembered values for sites we haven't visited in forgetMonths.
@@ -697,8 +961,7 @@ var NoSquint = {
             var prune = (age > NoSquint.forgetMonths*30*24*60*60*1000);
             if (prune)
                 remove.push(site);
-            debug("prune check: " + site + ", age=" + Math.round(age/1000/60/60/24) + 
-                 " days, prune=" + prune);
+            debug("prune check: " + site + ", age=" + Math.round(age/1000/60/60/24) + " days, prune=" + prune);
         }
         if (remove.length) {
             for (var i = 0; i < remove.length; i++)
@@ -720,8 +983,12 @@ var NoSquint = {
             return;
 
         var browser = gBrowser.selectedBrowser;
+        if (!browser._noSquintSite)
+            // Nothing to save.  Chrome maybe.
+            return;
         var text = Math.round(browser.markupDocumentViewer.textZoom * 100);
         var full = Math.round(browser.markupDocumentViewer.fullZoom * 100);
+        debug("saveCurrentZoom: " + browser._noSquintSite);
         NoSquint.updateSiteList(browser, [text, full]);
     },
 
@@ -732,48 +999,60 @@ var NoSquint = {
      *
      * Once updated, the site list is then queued for save in the prefs.
      */
-    updateSiteList: function(site_or_browser, levels, update_timestamp) {
+    updateSiteList: function(site_or_browser, levels, style, update_timestamp) {
+        if (!NoSquint.rememberSites)
+            return;
         var site = site_or_browser;
-        if (typeof(site_or_browser) != "string")
+        if (site_or_browser && typeof(site_or_browser) != "string")
             site = site_or_browser._noSquintSite;
         if (!site)
             return false;
 
         if (update_timestamp) {
-            if (!levels && !NoSquint.sites[site])
-                // No need to update the timestamp for a site we're not remembering.
-                return false;
-            NoSquint.sites[site][1] = new Date().getTime();
-            NoSquint.sites[site][2] += 1;
-            NoSquint.saveSiteList();
-        } 
-        if (levels) {
-            var [ text_default, full_default ] = NoSquint.getZoomDefaults();
-            var [ text, full ] = levels;
-            // Default zoom levels are stored as 0.
-            [ text, full ] = [ text == text_default ? 0 : text, full == full_default ? 0 : full ];
-
-            if (!text && !full) {
-                if (!NoSquint.sites[site])
-                    // No settings for this site, nothing to do.
-                    return;
-                // Setting site to default zoom level, remove it from list.
-                delete NoSquint.sites[site];
-            } else {
-                if (!NoSquint.sites[site])
-                    // New site record
-                    NoSquint.sites[site] = [text, new Date().getTime(), 1, full];
-                else {
-                    NoSquint.sites[site][0] = text;
-                    NoSquint.sites[site][3] = full;
-                }
-                // TODO: go through current tabs and resize tabs for this site
-            }
-
-            // Queue site list save.
-            NoSquint.saveSiteList();
+            // When updating timestamp, levels == style == null.
+            if (NoSquint.sites[site]) {
+                NoSquint.sites[site][1] = new Date().getTime();
+                NoSquint.sites[site][2] += 1;
+                // XXX: do we bother saving site list here?  The overhead
+                // probably isn't worth it just for a timestamp update.
+            } 
+            return true;
         }
-        return true;
+
+        if (!NoSquint.sites[site])
+            // new site record
+            NoSquint.sites[site] = [0, new Date().getTime(), 1, 0, '0', '0', false, '0', '0', false];
+        var record = NoSquint.sites[site];
+
+        if (levels) {
+            // Update record with specified levels.
+            var [text_default, full_default] = NoSquint.getZoomDefaults();
+            var [text, full] = levels;
+            // Default zooms are stored as 0.
+            record[0] = text == text_default ? 0 : text;
+            record[3] = full == full_default ? 0 : full;
+            NoSquint.queueZoomAll(site, 1000);
+        }
+        if (style) {
+            record[4] = style.text;
+            record[5] = style.bg;
+            record[6] = style.bgimages;
+            record[7] = style.unvisited;
+            record[8] = style.visited;
+            record[9] = style.underline;
+            NoSquint.queueStyleAll(site, 1000);
+        }
+
+        // Check newly updated record against defaults.  If all values are default, we
+        // remove the record.
+        if ([record[0]].concat(record.slice(3)).toString() == [0, 0, '0', '0', false, '0', '0', false].toString())
+            // All defaults.
+            delete NoSquint.sites[site];
+
+        debug("UPDATE SITE LIST: " + site + ": " + record);
+
+        // Queue site list save.
+        NoSquint.saveSiteList();
     },
 
     /* Queues a save of the site list in the prefs service.
@@ -796,46 +1075,44 @@ var NoSquint = {
     },
 
     /* Actually store the sites list. */
-    _realSaveSiteList: function() {
+    _realSaveSiteList: function(force) {
+        if (NoSquint.observer.inPrivateBrowsing && !force)
+            // Private Browsing mode is enabled; do not save site list.
+            return;
+
         /* XXX: this can take up to 20ms (!!!) even with a smallish sites list
-         * (about 50).  If it scales linearly, this could be a problem.  Need
-         * to do some more serious benchmarking here.  Looks like setCharPref
-         * can trigger pref observer handlers synchronously, so time elapsed
-         * includes the time the handlers take too.
+         * (about 50).  If it scales linearly or worse, this could be a
+         * problem.  Need to do some more serious benchmarking here.  Looks
+         * like setCharPref can trigger pref observer handlers synchronously,
+         * so time elapsed includes the time the handlers take too.
          */
         var t0 = new Date().getTime();
         var sites = [];
         for (var site in NoSquint.sites) {
             if (!NoSquint.sites[site])
-                continue
-            var [text, timestamp, counter, full] = NoSquint.sites[site];
-            sites.push(site + "=" + text + "," + timestamp + "," + counter + "," + full);
+                continue;
+            sites.push(site + "=" + NoSquint.sites[site].join(','));
         }
-        var siteList = sites.join(" ");
-        /* It's a precondition that the site list has changed, so when we set
-         * the pref it will fire a notification that we'll handle in 
-         * prefsChanged() which is not necessary here.  So set a flag that causes
-         * the next prefs notification for sites change to be ignored.
-         *
-         * TODO: this might not actually be relevant anymore, since the global
-         * prefs dialog no longer modifies the sites list.  Think on this, and
-         * if it's Think on this, and if that's the case, remove this obsolete
-         * comments and NoSquint.ignoreNextSitesChange.
-         * 
+
+        /* We're modifying the sites pref here.  Setting ignoreNextSitesChange=true
+         * causes the observer (in our current state) to not bother reparsing the
+         * sites pref because we know it's current.  In other words, we needn't
+         * respond to our own changes.
          */
         NoSquint.ignoreNextSitesChange = true;
-        NoSquint.prefs.setCharPref("sites", siteList);
+        NoSquint.prefs.setCharPref("sites", sites.join(" "));
         debug("sites save took: " + (new Date().getTime() - t0) + "ms");
         clearTimeout(NoSquint.saveTimer);
         NoSquint.saveTimer = null;
         NoSquint.sitesDirty = false;
+        debug("Full site list: " + sites);
     },
 
     /* Attach observers on extensions.nosquint and mousewheel.withcontrolkey
      * branches, and simulate a change to each of our prefs so that we can
      * load them.
      */
-    initPrefs: function() {
+    initPrefs: function(populate) {
         if (NoSquint.prefs)
             // Prefs already initialized.
             return;
@@ -843,7 +1120,7 @@ var NoSquint = {
         var prefs = Components.classes["@mozilla.org/preferences-service;1"].getService(
                           Components.interfaces.nsIPrefService);
         NoSquint.prefs = prefs.getBranch("extensions.nosquint.");
-        NoSquint.mousePrefs = prefs.getBranch("mousewheel.withcontrolkey.");
+        NoSquint.browserZoomPrefs = prefs.getBranch("browser.zoom.");
 
         // Backward compatibility: convert old prefs.
         try { 
@@ -860,19 +1137,61 @@ var NoSquint = {
             NoSquint.prefs.clearUserPref("rememberDomains");
         } catch (err) {} 
 
-        var prefs = [
-            "zoomIncrement", "wheelZoomEnabled", "zoomIncrement", "hideStatus", "zoomlevel", "action",
-            "sitesSaveDelay", "rememberSites", "exceptions", "sites", "forgetMonths", "fullZoomPrimary"
-        ];
-        for (var i in prefs)
-            // Simulate a change
-            NoSquint.observe(null, "nsPref:changed", prefs[i]);
+        if (NoSquint.prefs.getCharPref('prefsVersion') < '2.0') {
+            try {
+                // In 2.0, zoomlevel was split into fullZoomLevel and textZoomLevel
+                var zoomlevel = NoSquint.prefs.getIntPref("zoomlevel");
+                NoSquint.prefs.clearUserPref("zoomlevel");
+            } catch (err) {
+                // this was the default zoomlevel for < 2.0.
+                var zoomlevel = 120;
+            }
+
+            /* Previous versions of NoSquint set mousewheel.withcontrolkey.action=0
+             * under the assumption that we won't see DOMMouseScroll events otherwise.
+             * This was true with Firefox < 3, but apparently no longer the case with
+             * 3 and later.  So we restore the pref to its default value during this
+             * initial migration.  (The user might not want it restored, but this is
+             * the best we can do given what we know, and the correct thing to do
+             * in the common case.)
+             */
+            var mousePrefs = prefs.getBranch("mousewheel.withcontrolkey.");
+            mousePrefs.setIntPref("action", 3);
+
+            var fullZoomPrimary = NoSquint.prefs.getBoolPref("fullZoomPrimary");
+            if (fullZoomPrimary) {
+                NoSquint.prefs.setIntPref("fullZoomLevel", zoomlevel);
+                NoSquint.prefs.setIntPref("textZoomLevel", 100);
+            } else {
+                NoSquint.prefs.setIntPref("fullZoomLevel", 100);
+                NoSquint.prefs.setIntPref("textZoomLevel", zoomlevel);
+            }
+            NoSquint.prefs.setCharPref('prefsVersion', '2.0');
+        }
+
+        /* Disable browser.zoom.siteSpecific, which prevents Firefox from
+         * automatically applying zoom levels, as that is no NoSquint's job.
+         */
+        NoSquint.origSiteSpecific = NoSquint.browserZoomPrefs.getBoolPref('siteSpecific');
+        NoSquint.browserZoomPrefs.setBoolPref("siteSpecific", false);
+
+        if (populate) {
+            var prefs = [
+                "fullZoomLevel", "textZoomLevel", "zoomIncrement", "wheelZoomEnabled", "hideStatus",
+                "action", "sitesSaveDelay", "rememberSites", "exceptions", "sites", "forgetMonths",
+                "fullZoomPrimary", "wheelZoomInvert", "zoomImages", "colorText", "colorBackground", 
+                "colorBackgroundImages", "linksUnvisited", "linksVisited", "linksUnderline"
+            ];
+            for each (var pref in prefs)
+                // Simulate pref change for each pref to populate attributes
+                NoSquint.observe(null, "nsPref:changed", pref);
+        }
         
         // Attach observers to both branches.
         NoSquint.prefs.QueryInterface(Components.interfaces.nsIPrefBranch2);
         NoSquint.prefs.addObserver("", NoSquint, false);
-        NoSquint.mousePrefs.QueryInterface(Components.interfaces.nsIPrefBranch2);
-        NoSquint.mousePrefs.addObserver("", NoSquint, false);
+        NoSquint.browserZoomPrefs.QueryInterface(Components.interfaces.nsIPrefBranch2);
+        NoSquint.browserZoomPrefs.addObserver("", NoSquint, false);
     },
 
     /* Callback from prefs observer when a pref has changed in one of the
@@ -883,41 +1202,36 @@ var NoSquint = {
             // Either not a pref change, or we are in the process of shutting down.
             return;
 
-        // Used for mousewheel.withcontrolkey.action
-        NoSquint.prefsRecursion++;
-
         switch (data) {
-            case "action":
-                if (NoSquint.prefsRecursion > 1)
-                    // This update comes from us, ignore it.
+            case "siteSpecific":
+                if (NoSquint.browserZoomPrefs.getBoolPref("siteSpecific") == false ||
+                    window_get_global('disabled'))
+                    // disabled, which is fine with us, so ignore.
                     break;
-                /* If mousewheel.withcontrolkey.action has changed (perhaps via another
-                 * extension or edited manually by the user) try to do something
-                 * sensible.  If the action is set to 3 (default) then we enable the No
-                 * Squint wheel zoom hooks and then set the action to 0 (otherwise we
-                 * will never see events.  If it is set to any other value, we disable
-                 * the hook for wheel zoom.
-                 */
-                var action = NoSquint.mousePrefs.getIntPref("action");
-                if (action == 3 || action == 5) {
-                    NoSquint.prefs.setBoolPref("wheelZoomEnabled", true);
-                    debug("setting wheelZoomEnabled=true, action=0 because action == " + action);
-                    NoSquint.mousePrefs.setIntPref("action", 0);
-                } else if (action != 0) {
-                    debug("setting wheelZoomEnabled=false because action != 3 == " + action);
-                    NoSquint.prefs.setBoolPref("wheelZoomEnabled", false);
-                }
+
+                // yes == 0, no or close == 1
+                if (popup('confirm', 'siteSpecificTitle', 'siteSpecificPrompt') == 1)
+                    popup('alert', 'siteSpecificBrokenTitle', 'siteSpecificBrokenPrompt');
+                else
+                    NoSquint.browserZoomPrefs.setBoolPref("siteSpecific", false);
                 break;
 
-            case "zoomlevel":
-                NoSquint.defaultZoomLevel = NoSquint.prefs.getIntPref("zoomlevel");
+            case "fullZoomLevel":
+                NoSquint.defaultFullZoomLevel = NoSquint.prefs.getIntPref("fullZoomLevel");
+                NoSquint.queueZoomAll();
+                break;
+
+            case "textZoomLevel":
+                NoSquint.defaultTextZoomLevel = NoSquint.prefs.getIntPref("textZoomLevel");
                 NoSquint.queueZoomAll();
                 break;
 
             case "wheelZoomEnabled":
                 NoSquint.wheelZoomEnabled = NoSquint.prefs.getBoolPref("wheelZoomEnabled");
-                if (NoSquint.wheelZoomEnabled)
-                    NoSquint.mousePrefs.setIntPref("action", 0);
+                break;
+
+            case "wheelZoomInvert":
+                NoSquint.wheelZoomInvert = NoSquint.prefs.getBoolPref("wheelZoomInvert");
                 break;
 
             case "zoomIncrement":
@@ -935,6 +1249,10 @@ var NoSquint = {
                 NoSquint.queueZoomAll();
                 break;
 
+            case "zoomImages":
+                NoSquint.zoomImages = NoSquint.prefs.getBoolPref("zoomImages");
+                break;
+
             case "hideStatus":
                 NoSquint.hideStatus = NoSquint.prefs.getBoolPref("hideStatus");
                 document.getElementById("nosquint-status").hidden = NoSquint.hideStatus;
@@ -944,6 +1262,7 @@ var NoSquint = {
 
             case "rememberSites":
                 NoSquint.rememberSites = NoSquint.prefs.getBoolPref("rememberSites");
+                // XXX: if false, should we clear sites?
                 NoSquint.queueZoomAll();
                 break;
 
@@ -959,53 +1278,121 @@ var NoSquint = {
                 break;
 
             case "sites":
-                /* Parse site list from prefs.  The prefs string a list of site
-                 * specs, delimited by a space, in the form
-                 * "sitename=text_level,timestamp,visits,full_level".  Spaces
-                 * are not allowed in any value; sitename is a string, all
-                 * other values are integers.  The parsing code tries to be
-                 * robust and handle malformed entries gracefully (in case the
-                 * user edits them manually and screws up).
-                 */
-                // TODO: look at nsIContentPrefService
                 if (NoSquint.ignoreNextSitesChange) {
                     NoSquint.ignoreNextSitesChange = false;
                     break;
                 }
-                var sitesStr = NoSquint.prefs.getCharPref("sites");
-
-                // Trim whitespace and split on space.
-                var sites = sitesStr.replace(/(^\s+|\s+$)/g, "").split(" ");
-                var now = new Date().getTime();
-                NoSquint.sites = {};
-                for (var i = 0; i < sites.length; i++) {
-                    var parts = sites[i].split("=");
-                    if (parts.length != 2)
-                        continue; // malformed
-                    var [site, info] = parts;
-                    var parts = info.split(',');
-                    NoSquint.sites[site] = [parseInt(parts[0]) || 0, now, 1, 0];
-                    if (parts.length > 1)
-                        NoSquint.sites[site][1] = parseInt(parts[1]) || now;
-                    if (parts.length > 2)
-                        NoSquint.sites[site][2] = parseInt(parts[2]) || 1;
-                    if (parts.length > 3)
-                        NoSquint.sites[site][3] = parseInt(parts[3]) || 0;
-
-                }
-                if (NoSquint.sitesDirty) {
-                    /* FIXME: looks like the sites list pref was updated (possibly by
-                     * another browser window) before we got a chance to write out our
-                     * changes.  We have lost them now; we should try to merge only
-                     * newer changes based on timestamp.
-                     */
-                    NoSquint.sitesDirty = false;
-                }
+                NoSquint.parseSitesPref();
                 NoSquint.queueZoomAll();
+                NoSquint.queueStyleAll();
+                break;
+
+            case "colorText":
+                NoSquint.colorText = NoSquint.prefs.getCharPref("colorText");
+                NoSquint.queueStyleAll();
+                break;
+
+            case "colorBackground":
+                NoSquint.colorBackground = NoSquint.prefs.getCharPref("colorBackground");
+                NoSquint.queueStyleAll();
+                break;
+
+            case "colorBackgroundImages":
+                NoSquint.colorBackgroundImages = NoSquint.prefs.getBoolPref("colorBackgroundImages");
+                NoSquint.queueStyleAll();
+                break;
+
+            case "linksUnvisited":
+                NoSquint.linksUnvisited = NoSquint.prefs.getCharPref("linksUnvisited");
+                NoSquint.queueStyleAll();
+                break;
+
+            case "linksVisited":
+                NoSquint.linksVisited = NoSquint.prefs.getCharPref("linksVisited");
+                NoSquint.queueStyleAll();
+                break;
+
+            case "linksUnderline":
+                NoSquint.linksUnderline = NoSquint.prefs.getBoolPref("linksUnderline");
+                NoSquint.queueStyleAll();
                 break;
             }
-        NoSquint.prefsRecursion--;
+    },
+
+    /* Parses extensions.nosquint.sites pref into NoSquint.sites array.
+     */
+    parseSitesPref: function() {
+        /* Parse site list from prefs.  The prefs string a list of site specs, delimited by a space, in the
+         * form: 
+         *
+         *     sitename=text_level,timestamp,visits,full_level
+         *
+         * Spaces are not allowed in any value; sitename is a string, all other values are integers.  The
+         * parsing code tries to be robust and handle malformed entries gracefully (in case the user edits
+         * them manually and screws up).  Consequently it is ugly.
+         */
+        var sitesStr = NoSquint.prefs.getCharPref("sites");
+
+        // Trim whitespace and split on space.
+        var sites = sitesStr.replace(/(^\s+|\s+$)/g, "").split(" ");
+        var now = new Date().getTime();
+        NoSquint.sites = {};
+        for (var i = 0; i < sites.length; i++) {
+            var parts = sites[i].split("=");
+            if (parts.length != 2)
+                continue; // malformed
+            var [site, info] = parts;
+            var parts = info.split(',');
+            NoSquint.sites[site] = [parseInt(parts[0]) || 0, now, 1, 0, '0', '0', false, '0', '0', false];
+            if (parts.length > 1) // last visited timestamp
+                NoSquint.sites[site][1] = parseInt(parts[1]) || now;
+            if (parts.length > 2) // visit count
+                NoSquint.sites[site][2] = parseInt(parts[2]) || 1;
+            if (parts.length > 3) // full page zoom level
+                NoSquint.sites[site][3] = parseInt(parts[3]) || 0;
+            if (parts.length > 4) // text color
+                NoSquint.sites[site][4] = parts[4] || '0';
+            if (parts.length > 5) // bg color
+                NoSquint.sites[site][5] = parts[5] || '0';
+            if (parts.length > 6) // disable bg images
+                NoSquint.sites[site][6] = parts[6] == 'true' ? true : false;
+            if (parts.length > 7) // unvisited link color
+                NoSquint.sites[site][7] = parts[7] || '0';
+            if (parts.length > 8) // visited link color
+                NoSquint.sites[site][8] = parts[8] || '0';
+            if (parts.length > 9) // force underline links
+                NoSquint.sites[site][9] = parts[9] == 'true' ? true : false;
+
+        }
+        if (NoSquint.sitesDirty) {
+            /* FIXME: looks like the sites list pref was updated (possibly by
+             * another browser window) before we got a chance to write out our
+             * changes.  We have lost them now; we should try to merge only
+             * newer changes based on timestamp.
+             */
+            NoSquint.sitesDirty = false;
+        }
+    },
+
+    /* Removes all site settings for sites that were modified within the given
+     * range.  range is a 2-tuple (start, stop) where each are timestamps in
+     * milliseconds.  The newly sanitized site list is then immediately stored.
+     */
+    sanitize: function(range) {
+        if (range == undefined || !range) {
+            NoSquint.sites = {}
+        } else {
+            for (var site in NoSquint.sites) {
+                var timestamp = NoSquint.sites[site][1] * 1000;
+                if (timestamp >= range[0] && timestamp <= range[1])
+                    delete NoSquint.sites[site];
+            }
+        }
+        NoSquint._realSaveSiteList();
+        NoSquint.queueZoomAll();
+        NoSquint.queueStyleAll();
     }
+
 };
 
 
@@ -1032,14 +1419,36 @@ ProgressListener.prototype.onLocationChange = function(progress, request, uri) {
      * zoom after that happens (to override it, in effect).
      */
     debug("Location change: " + uri.spec);
-    this.update = true;
-    NoSquint.abortPendingZoomManager();
+    //alert("Location change: " + uri.spec + ' -- doc uri:' + this.browser.docShell.document.URL);
+    this.style_applied = false;
+    this.zoom_override = false;
+    this.browser._noSquintStyles = [];
+    this.content_type = this.browser.docShell.document.contentType;
     NoSquint.locationChanged(this.browser, this.browser.currentURI);
 }
 
-ProgressListener.prototype.onStateChange = function(progress, request, state, status) {
+ProgressListener.prototype.onStateChange = function(progress, request, state, astatus) {
+    //debug("LISTENER: request=" + request + ", state=" + state + ", status=" + astatus);
+    //debug("STATE CHANGE: " + this.browser.docShell.document.contentType);
+
+    /* Check the current content type against the content type we initially got.
+     * This changes in the case when there's an error page (e.g. dns failure),
+     * which we treat as chrome and do not adjust.
+     */
+    var content_type = this.browser.docShell.document.contentType;
+    if (this.content_type != content_type) {
+        this.content_type = content_type;
+        if (is_chrome(this.browser)) {
+            this.browser._noSquintSite = null;
+            NoSquint.zoom(this.browser, 100, 100);
+        }
+    } else if (!this.style_applied && state & Components.interfaces.nsIWebProgressListener.STATE_STOP) {
+        if (!is_chrome(this.browser) || is_image(this.browser))
+            NoSquint.style(this.browser);
+        this.style_applied = true;
+    }
     if (!progress.isLoadingDocument) {
-        // Document load is fone; queue a save of the site list if it has been
+        // Document load is done; queue a save of the site list if it has been
         // changed.
         if (NoSquint.sitesDirty)
             NoSquint.saveSiteList();
@@ -1057,3 +1466,101 @@ ProgressListener.prototype.onSecurityChange =
 ProgressListener.prototype.onLinkIconAvailable = function() {
     return 0;
 }
+
+// Custom observer attached to nsIObserverService.  Used to detect changes
+// to private browsing state, and addon disable/uninstall.  Some code
+// borrowed from https://developer.mozilla.org/En/Supporting_private_browsing_mode
+
+function NoSquintObserver() {  
+  this.init();  
+}
+
+NoSquintObserver.prototype = {  
+    _os: null,  
+    _inPrivateBrowsing: false, // whether we are in private browsing mode  
+    watcher: {}, // the watcher object  
+    _hooked: false,
+   
+    init: function () {  
+        this._inited = true;  
+        this._os = Components.classes["@mozilla.org/observer-service;1"]  
+                             .getService(Components.interfaces.nsIObserverService);  
+        this._hook();
+    },
+
+    _hook: function() {
+        this._os.addObserver(this, "private-browsing-granted", false);  
+        this._os.addObserver(this, "quit-application", false);  
+        this._os.addObserver(this, "em-action-requested", false);  
+        try {  
+            var pbs = Components.classes["@mozilla.org/privatebrowsing;1"]  
+                              .getService(Components.interfaces.nsIPrivateBrowsingService);  
+            this._inPrivateBrowsing = pbs.privateBrowsingEnabled;  
+        } catch(ex) {  
+            // ignore exceptions in older versions of Firefox  
+        }
+        this._hooked = true;
+    },
+
+    _unhook: function() {
+        this._os.removeObserver(this, "quit-application-granted");  
+        this._os.removeObserver(this, "private-browsing");  
+        this._hooked = false;
+    },
+
+    observe: function (subject, topic, data) {  
+        debug("OBSERVER: sub=" + subject + ", topic=" + topic + ", data=" + data);
+        switch (topic) {
+            case "private-browsing":
+                switch (data) {
+                    case "enter":
+                        this._inPrivateBrowsing = true;  
+                        if ("onEnterPrivateBrowsing" in this.watcher)
+                            this.watcher.onEnterPrivateBrowsing();  
+                        break;
+
+                    case "exit":
+                        this._inPrivateBrowsing = false;  
+                        if ("onExitPrivateBrowsing" in this.watcher)
+                            this.watcher.onExitPrivateBrowsing();  
+                        break;
+                }
+                break;
+
+            case "quit-application-granted":
+                this._unhook();
+                break;
+
+            case "em-action-requested":
+                switch (data) {
+                    case "item-disabled":
+                    case "item-uninstalled":
+                        var item = subject.QueryInterface(Components.interfaces.nsIUpdateItem);
+                        if (item.id != 'nosquint@urandom.ca' || window_get_global('disabled'))
+                            break;
+
+                        window_set_global('disabled', true);
+                        if (popup('confirm', 'disableTitle', 'disablePrompt') == 1) {
+                            // Clicked no
+                        } else {
+                            NoSquint.browserZoomPrefs.setBoolPref("siteSpecific", true);
+                        }
+                        debug("Disabling item: " + item.id);
+                        break;
+                    
+                    case "item-cancel-action":
+                        var item = subject.QueryInterface(Components.interfaces.nsIUpdateItem);
+                        if (item.id != 'nosquint@urandom.ca' || window_get_global('disabled') != true)
+                            break;
+                        NoSquint.browserZoomPrefs.setBoolPref("siteSpecific", false);
+                        debug("Enabling item: " + item.id);
+                        window_set_global('disabled', false);
+                }
+                break;
+        }
+    },  
+   
+    get inPrivateBrowsing() {  
+        return this._inPrivateBrowsing;  
+    },  
+}; 

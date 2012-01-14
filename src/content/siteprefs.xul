@@ -1,19 +1,27 @@
 <?xml version="1.0"?>
 <?xml-stylesheet href="chrome://global/skin/global.css"  type="text/css"?>
 <?xml-stylesheet href="chrome://nosquint/content/prefs.css"  type="text/css"?>
-<!DOCTYPE window SYSTEM "chrome://nosquint/locale/siteprefs.dtd">
+<!DOCTYPE window [
+    <!ENTITY % siteDTD SYSTEM "chrome://nosquint/locale/siteprefs.dtd" >
+    %siteDTD;
+    <!ENTITY % globalDTD SYSTEM "chrome://nosquint/locale/globalprefs.dtd" >
+    %globalDTD;
+]>
 
 <dialog xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
         xmlns:html="http://www.w3.org/1999/xhtml"
         title="&ns.pref.title;"
-        buttons="accept,cancel" 
+        buttons="extra1,accept,cancel" 
         ondialogaccept="NoSquintSitePrefs.close()"
         ondialogcancel="NoSquintSitePrefs.cancel()"
+        ondialogextra1="NoSquintSitePrefs.NoSquint.openGlobalPrefsDialog()"
+        buttonlabelextra1="&ns.pref.button.global.label;"
+        buttonaccesskeyextra1="&ns.pref.button.global.accesskey;"
         id="nosquint-siteprefs-dialog"
         persist="screenX screenY"
         onload="NoSquintSitePrefs.init(document, this)">
 
-    <script src="siteprefs.js" />
+    <script type="application/x-javascript" src="chrome://nosquint/content/siteprefs.js" />
 
     <stringbundleset id="stringbundleset">
         <stringbundle id="nosquint-prefs-bundle" src="chrome://nosquint/locale/siteprefs.properties" />
@@ -21,46 +29,91 @@
 
     <groupbox id="site">
         <caption />
-        <grid id="siteZoom-box" flex="1">
-            <columns>
-                <column />
-                <column />
-                <column />
-                <column flex="1" />
-                <column />
-            </columns>
-            <rows>
-                <row align="center">
-                    <hbox>
+        <vbox flex='1'>
+            <hbox id="global-warning-box" align="center">
+                <image class="alert-icon" />
+                <html:div>&ns.pref.globalWarning;</html:div>
+            </hbox>
+
+            <grid id="siteZoom-box" flex="1">
+                <columns>
+                    <column />
+                    <column />
+                    <column />
+                    <column flex="1" />
+                    <column />
+                </columns>
+                <rows>
+                    <row align="center">
+                        <hbox>
+                            <spacer flex="1" />
+                            <label value="&ns.pref.fullZoom.label;:" />
+                        </hbox>
+                        <scale id="full-zoom-slider" min="40" increment="1" max="300" style="width:200px"
+                               onchange="NoSquintSitePrefs.sliderChange('full', this)"/>
+                        <hbox align="center">
+                            <textbox id="full-zoom-level" size="2" type="number" min="40" max="300" increment="5" />
+                            <label class="percent">%</label>
+                        </hbox>
                         <spacer flex="1" />
-                        <label value="&ns.pref.fullZoom.label;:" />
-                    </hbox>
-                    <scale id="full-zoom-slider" min="40" increment="1" max="300" style="width:200px"
-                           onchange="NoSquintSitePrefs.sliderChange('full', this)"/>
-                    <hbox align="center">
-                        <textbox id="full-zoom-level" size="2" type="number" min="40" max="300" increment="5" />
-                        <label class="percent">%</label>
-                    </hbox>
-                    <spacer flex="1" />
-                    <button  label="&ns.pref.button.useDefault.label;"
-                             id="siteZoom-button" oncommand="NoSquintSitePrefs.buttonUseDefault('full')" />
-                </row>
-                <row align="center">
-                    <hbox>
+                        <button  label="&ns.pref.button.useDefault.label;"
+                                 id="siteZoom-button" oncommand="NoSquintSitePrefs.buttonUseDefault('full')" />
+                    </row>
+                    <row align="center">
+                        <hbox>
+                            <spacer flex="1" />
+                            <label value="&ns.pref.textZoom.label;:" />
+                        </hbox>
+                        <scale id="text-zoom-slider" min="40" increment="1" max="300" 
+                               onchange="NoSquintSitePrefs.sliderChange('text', this)"/>
+                        <hbox align="center">
+                            <textbox id="text-zoom-level" size="2" type="number" min="40" max="300" increment="5"  />
+                            <label class="percent">%</label>
+                        </hbox>
                         <spacer flex="1" />
-                        <label value="&ns.pref.textZoom.label;:" />
-                    </hbox>
-                    <scale id="text-zoom-slider" min="40" increment="1" max="300" 
-                           onchange="NoSquintSitePrefs.sliderChange('text', this)"/>
-                    <hbox align="center">
-                        <textbox id="text-zoom-level" size="2" type="number" min="40" max="300" increment="5"  />
-                        <label class="percent">%</label>
-                    </hbox>
-                    <spacer flex="1" />
-                    <button  label="&ns.pref.button.useDefault.label;"
-                             id="siteZoom-button" oncommand="NoSquintSitePrefs.buttonUseDefault('text')" />
-                </row>
-            </rows>
-        </grid>
+                        <button  label="&ns.pref.button.useDefault.label;"
+                                 id="siteZoom-button" oncommand="NoSquintSitePrefs.buttonUseDefault('text')" />
+                    </row>
+                </rows>
+            </grid>
+
+            <hbox flex='1' style='padding-top: 1em'>
+                <groupbox flex='1'>
+                    <caption label="&ns.pref.colors.colors.caption;" />
+                    <vbox>
+                        <hbox>
+                            <checkbox id="colorText" label="&ns.pref.colors.colors.text.label;"
+                                      checked="false" flex="1" />
+                            <colorpicker type='button' />
+                        </hbox>
+                        <hbox>
+                            <checkbox id="colorBackground" label="&ns.pref.colors.colors.background.label;"
+                                      checked="false" flex="1" />
+                            <colorpicker type='button' />
+                        </hbox>
+                        <checkbox id="colorBackgroundImages" label="&ns.pref.colors.colors.images.label;"
+                                  checked="false" flex="1" />
+                    </vbox>
+                </groupbox>
+                <groupbox flex='1'>
+                    <caption label="&ns.pref.colors.links.caption;" />
+                    <vbox>
+                        <hbox>
+                            <checkbox id="linksUnvisited" label="&ns.pref.colors.links.unvisited.label;" 
+                                      checked="false" flex="1" />
+                            <colorpicker type='button' />
+                        </hbox>
+                        <hbox>
+                            <checkbox id="linksVisited" label="&ns.pref.colors.links.visited.label;"
+                                      checked="false" flex="1" />
+                            <colorpicker type='button' />
+                        </hbox>
+                        <checkbox id="linksUnderline" label="&ns.pref.colors.links.underline.label;"
+                                  checked="false" flex="1" />
+                    </vbox>
+                </groupbox>
+            </hbox>
+
+        </vbox>
     </groupbox>
 </dialog>
