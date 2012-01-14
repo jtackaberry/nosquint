@@ -4,9 +4,13 @@
 
 <overlay id="nosquint-overlay" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
         xmlns:html="http://www.w3.org/1999/xhtml">
-    <script type="application/x-javascript" src="chrome://nosquint/content/utils.js" />
-    <script type="application/x-javascript" src="chrome://nosquint/content/nosquint.js" />
     <script type="application/x-javascript" src="chrome://nosquint/content/init.js" />
+    <script type="application/x-javascript" src="chrome://nosquint/content/lib.js" />
+    <script type="application/x-javascript" src="chrome://nosquint/content/interfaces.js" />
+    <script type="application/x-javascript" src="chrome://nosquint/content/prefs.js" />
+    <script type="application/x-javascript" src="chrome://nosquint/content/browser.js" />
+    <script type="application/x-javascript" src="chrome://nosquint/content/cmd.js" />
+    <script type="application/x-javascript" src="chrome://nosquint/content/zoommanager.js" />
 
     <stringbundleset id="stringbundleset">
         <stringbundle id="nosquint-overlay-bundle" src="chrome://nosquint/locale/overlay.properties" />
@@ -15,13 +19,13 @@
     <toolbarpalette id="BrowserToolbarPalette">
         <toolbarbutton id="nosquint-button-reduce" class="toolbarbutton-1"
                        label="Zoom Out" tooltiptext="Zoom out"
-                       oncommand="NoSquint.buttonReduce(event);" />
+                       oncommand="NoSquint.cmd.buttonReduce(event);" />
         <toolbarbutton id="nosquint-button-enlarge" class="toolbarbutton-1"
                        label="Zoom In" tooltiptext="Zoom in"
-                       oncommand="NoSquint.buttonEnlarge(event);" />
+                       oncommand="NoSquint.cmd.buttonEnlarge(event);" />
         <toolbarbutton id="nosquint-button-reset" class="toolbarbutton-1"
                        label="Reset Zoom" tooltiptext="Reset Zoom"
-                       oncommand="NoSquint.buttonReset(event);" />
+                       oncommand="NoSquint.cmd.buttonReset(event);" />
     </toolbarpalette>
 
     <keyset id="mainKeyset">
@@ -32,17 +36,17 @@
     </keyset>
 
     <commandset id="mainCommandSet">
-        <command id="cmd_noSquintPrefs" oncommand="NoSquint.openGlobalPrefsDialog()" />
-        <command id="cmd_fullZoomEnlarge" oncommand="NoSquint.cmdEnlargePrimary()" />
-        <command id="cmd_fullZoomReduce" oncommand="NoSquint.cmdReducePrimary()" />
-        <command id="cmd_fullZoomReset" oncommand="NoSquint.cmdReset()" />
-        <command id="cmd_noSquintEnlargeSecondary" oncommand="NoSquint.cmdEnlargeSecondary()" />
-        <command id="cmd_noSquintReduceSecondary" oncommand="NoSquint.cmdReduceSecondary()" />
+        <command id="cmd_noSquintPrefs" oncommand="NoSquint.cmd.openGlobalSettings()" />
+        <command id="cmd_fullZoomEnlarge" oncommand="NoSquint.cmd.enlargePrimary()" />
+        <command id="cmd_fullZoomReduce" oncommand="NoSquint.cmd.reducePrimary()" />
+        <command id="cmd_fullZoomReset" oncommand="NoSquint.cmd.reset()" />
+        <command id="cmd_noSquintEnlargeSecondary" oncommand="NoSquint.cmd.enlargeSecondary()" />
+        <command id="cmd_noSquintReduceSecondary" oncommand="NoSquint.cmd.reduceSecondary()" />
     </commandset>
 
     <popup id="contentAreaContextMenu">
       <menuitem id="nosquint-menu-settings" label="&ns.menu.context.label;"
-                accesskey="&ns.menu.context.accesskey;" oncommand="NoSquint.openSitePrefsDialog();"/>
+                accesskey="&ns.menu.context.accesskey;" oncommand="NoSquint.cmd.openSiteSettings();"/>
     </popup>
 
     <statusbar id="status-bar">
@@ -103,7 +107,7 @@
             </grid>
         </tooltip>
 
-        <menupopup id="nosquint-status-popup" oncommand="NoSquint.popupItemSelect(event)">
+        <menupopup id="nosquint-status-popup" oncommand="NoSquint.cmd.popupItemSelect(event)">
             <menuitem id="nosquint-popup-site" label="Site" disabled="true" style="font-style: italic" />
             <menu label="&ns.menu.fullZoom.label;">
                 <menupopup id="nosquint-status-popup-full">
@@ -127,15 +131,15 @@
                     <menuitem type="radio" name="text" label="150%" />
                 </menupopup>
             </menu>
-            <menuitem id="nosquint-status-reset" label="&ns.menu.reset.label;" onclick="NoSquint.cmdReset()" />
-            <menuitem label="&ns.menu.siteSettings.label;" onclick="NoSquint.openSitePrefsDialog()" />
+            <menuitem id="nosquint-status-reset" label="&ns.menu.reset.label;" onclick="NoSquint.cmd.reset()" />
+            <menuitem label="&ns.menu.siteSettings.label;" onclick="NoSquint.cmd.openSiteSettings()" />
             <menuseparator />
-            <menuitem label="&ns.menu.globalSettings.label;" onclick="NoSquint.openGlobalPrefsDialog()" />
+            <menuitem label="&ns.menu.globalSettings.label;" onclick="NoSquint.cmd.openGlobalSettings()" />
         </menupopup>
 
         <statusbarpanel class="statusbarpanel-iconic-text" id="nosquint-status" label="100%" 
-                        onclick="NoSquint.statusPanelClick(event)" 
-                        src="chrome://nosquint/skin/icon-enlarge-16.png" 
+                        onclick="NoSquint.cmd.statusPanelClick(event)" 
+                        src="chrome://nosquint/skin/icon-statusbar-16.png" 
                         tooltip="nosquint-status-tooltip" />
     </statusbar>
 </overlay> 

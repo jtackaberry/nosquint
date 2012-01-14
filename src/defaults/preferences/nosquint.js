@@ -18,4 +18,5 @@ pref("extensions.nosquint.colorBackgroundImages", false);
 pref("extensions.nosquint.linksUnvisited", '0');
 pref("extensions.nosquint.linksVisited", '0');
 pref("extensions.nosquint.linksUnderline", false);
+pref("privacy.cpd.extensions-nosquint", true);
 pref("privacy.item.extensions-nosquint", true);

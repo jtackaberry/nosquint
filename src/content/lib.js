@@ -6,7 +6,8 @@
      * exists once, and is referenced for each window.  (In contrast, doing
      * Application.storage.set('foo', [1,2]) will store a copy of the list.)
      */
-    this.storage = Application.storage.get('nosquint-global', null);
+    var extstorage = Application.extensions.get('nosquint@urandom.ca').storage;
+    this.storage = extstorage.get('global', null);
     if (this.storage === null) {
         // Initialize global defaults.
         this.storage = {
@@ -15,19 +16,16 @@
             origSiteSpecific: null,
             dialogs: {}
         };
-        Application.storage.set('nosquint-global', this.storage);
+        extstorage.set('global', this.storage);
     }
+
 
     this.is30 = function() {
         return Application.version.substr(0, 4) == '3.0.';
     };
 
     this.is36 = function() {
-        return Application.version.substr(0, 4) == '3.6.';
-    };
-
-    this.is40 = function() {
-        return Application.version.substr(0, 4) >= '4.0.';
+        return Application.version.substr(0, 4) >=  '3.6.';
     };
 
     this.$ = function(id, doc) {
@@ -108,7 +106,6 @@
     this.isChrome = function(browser) {
         var document = browser.docShell.document;
         
-        //this.debug('isChrome(): URL=' + document.URL + ', spec=' + browser.currentURI.spec + ', contentType=' + document.contentType);
         if (document.URL == undefined)
             return true;
 
@@ -132,7 +129,6 @@
 
         // Less common cases that we'll cover with the more expensive regexp.
         return document.contentType.search(/^text\/(plain|css|xml|javascript)/) != 0;
-        //return document.contentType.search(/^text\/(plain|css|xml|javascript)|image\//) != 0;
     };
 
     this.isImage = function(browser) {

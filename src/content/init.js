@@ -1,61 +1,44 @@
-window.addEventListener("load", NoSquint.init, false); 
-window.addEventListener("unload", NoSquint.destroy, false); 
+// Global object for NoSquint.  'NoSquint' is the only name added to the global
+// namespace by this addon.
+NoSquint = {
+    id: 'NoSquint',
+    namespaces: [],
+    _initialized: false,
+    dialogs: {},            // dialogs namespace
 
-/* NoSquint hooks the ZoomManager, overriding its default functionality.
- *
- * The logic below should be well-behaved when the user uses exclusively
- * full page or text-only zooms.
- *
- * If both zooms are in use (i.e. full and text != 100%), things can get
- * a little dubious.  In general, if full zoom is not 100%, then we pretend
- * as if full zoom is the primary method, regardless of whether it actually
- * is.  The rationale is that full page zoom is more likely to affect logic
- * used by people interfacing with ZoomManager.
- *
- * More details in ZoomManager.useFullZoom getter.
- */
+    ns: function(fn) {
+        var scope = {
+            extend: function(o) {
+                for (var key in o)
+                    this[key] = o[key];
+                }
+        };
+        scope = fn.apply(scope) || scope;
+        NoSquint.namespaces.push(scope);
+        return scope;
+    },
 
-// ZoomManager._nosquintOrigZoomGetter = ZoomManager.__lookupGetter__('zoom');
-// ZoomManager._nosquintOrigZoomSetter = ZoomManager.__lookupSetter__('zoom');
+    init: function() {
+        if (NoSquint._initialized)
+            return;
+        NoSquint._initialized = true;
 
-ZoomManager.__defineSetter__('zoom', function(value) {
-    var viewer = getBrowser().mCurrentBrowser.markupDocumentViewer;
-    var updated = false;
+        for (let i = 0; i < NoSquint.namespaces.length; i++) {
+            var scope = NoSquint.namespaces[i];
+            if (scope.init !== undefined)
+                scope.init();
+        }
+    },
 
-    if (ZoomManager.useFullZoom && viewer.fullZoom != value)
-        updated = viewer.fullZoom = value;
-    else if (!ZoomManager.useFullZoom && viewer.textZoom != value)
-        updated = viewer.textZoom = value;
-
-    if (updated != false) {
-        NoSquint.saveCurrentZoom();
-        NoSquint.updateStatus();
+    destroy: function() {
+        // Invoke destroy functions in all registered namespaces
+        for (let i = 0; i < NoSquint.namespaces.length; i++) {
+            var scope = NoSquint.namespaces[i];
+            if (scope.destroy !== undefined)
+                scope.destroy();
+        }
     }
-});
+};
 
-ZoomManager.__defineGetter__('zoom', function() {
-    var viewer = getBrowser().mCurrentBrowser.markupDocumentViewer;
-    return ZoomManager.useFullZoom ? viewer.fullZoom : viewer.textZoom;
-});
-
-ZoomManager.__defineGetter__('useFullZoom', function() {
-    /* Extensions (like all-in-one gestures) assume that zoom is either all
-     * full page or all text-only, which is of course quite reasonable given
-     * the ZoomManager interface assumes this too.
-     *
-     * So, regardless of what the primary zoom method is set to, if the
-     * current page has a full zoom level != 100%, then we always return
-     * true here.
-     * 
-     * This is to handle the uncommon case where the user has modified
-     * both text and full page zoom.  Extensions like AIO need to base
-     * decisions on whether or not the page is full-zoomed, not whether
-     * or not the user prefers full or text zoom.
-     */
-    var viewer = getBrowser().mCurrentBrowser.markupDocumentViewer;
-    return viewer.fullZoom != 1.0 ? true : NoSquint.fullZoomPrimary;
-});
-
-ZoomManager.enlarge = NoSquint.cmdEnlargePrimary;
-ZoomManager.reduce = NoSquint.cmdReducePrimary;
-ZoomManager.reset = NoSquint.cmdReset;
+window.addEventListener("load", NoSquint.init, false); 
+window.addEventListener("unload", NoSquint.destroy, false);

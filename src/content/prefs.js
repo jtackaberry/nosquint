@@ -22,15 +22,6 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
         linksVisited: '#551a8b'
     };
 
-    /* Active window we can use for window methods (e.g. setTimeout).  Because
-     * NSQ.prefs is a singleton, it could be that the window we initialized
-     * with has been closed.  In that case, setTimeout will fail with 
-     * NS_ERROR_NOT_INITIALIZED.  So we keep a reference to an available
-     * window here we can call window.* methods with, and if the window
-     * goes away, we find a new one using foreachNSQ().
-     */
-    this.window = window;
-
     // Pref service.
     var svc = Components.classes["@mozilla.org/preferences-service;1"].getService(
                           Components.interfaces.nsIPrefService);
@@ -103,11 +94,6 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
     };
 
     this.destroy = function() {
-        if (this.rememberSites)
-            // In case the window shutting down is the one whose saveTimer is
-            // associated with, we should finish any pending save now.
-            this.finishPendingSaveSiteList();
-
         if (!NSQ.storage.quitting)
             // NSQ.prefs is a singleton so we only ever truly destroy on app
             // shutdown.
@@ -116,27 +102,13 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
         branchNS.removeObserver('', this);
         branchBZ.removeObserver('', this);
 
-        if (!this.rememberSites)
+        if (this.rememberSites)
+            this.finishPendingSaveSiteList();
+        else
             // Per-site setting storage disabled.
             branchNS.setCharPref('sites', '');
 
         this.setSiteSpecific(origSiteSpecific);
-    };
-
-
-    /* Invoke a window method, such as setTimeout.  We need to do this indirectly
-     * because NSQ.prefs is a singleton, and the window NSQ.prefs initialized with
-     * may not actually still be alive.
-     */
-    this.winFunc = function(func) {
-        var args = Array.prototype.slice.call(arguments, 1); 
-        try {
-            return this.window[func].apply(this.window, args);
-        } catch (e) {
-            // Presumably NS_ERROR_NOT_INITIALIZED.  TODO: verify.
-            this.window = foreachNSQ(function() false);
-            return this.window[func].apply(this.window, args);
-        }
     };
 
     this.setSiteSpecific = function(value) {
@@ -164,7 +136,6 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
             // Not a pref change.
             return;
 
-        debug('observe(): data=' + data);
         switch (data) {
             case 'siteSpecific':
                 if (branchBZ.getBoolPref('siteSpecific') == false || NSQ.storage.disabled || NSQ.storage.quitting)
@@ -453,6 +424,7 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
         var remove = [];
         var now = new Date();
         for (let [site, settings] in items(this.sites)) {
+        //for (let [site, settings] in Iterator(this.sites)) {
             if (!settings)
                 continue
             var [text, timestamp, counter, full] = settings;
@@ -470,7 +442,7 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
 
         // Fire timer once a day.
         if (pruneTimer == null)
-            pruneTimer = this.winFunc('setTimeout', function() { pruneTimer = null; NSQ.prefs.pruneSites(); }, 24*60*60*1000);
+            pruneTimer = setTimeout(function() { pruneTimer = null; NSQ.prefs.pruneSites(); }, 24*60*60*1000);
     };
 
 
@@ -551,7 +523,7 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
          * needlessly iterating over the sites array.
          */
         debug("queueSaveSiteList(): delay=" + this.saveDelay);
-        saveTimer = this.winFunc('setTimeout', function() NSQ.prefs.saveSiteList(), this.saveDelay);
+        saveTimer = setTimeout(function() NSQ.prefs.saveSiteList(), this.saveDelay);
     };
 
 
@@ -579,7 +551,7 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
         branchNS.setCharPref('sites', sites.join(' '));
         this.save();
         debug("saveSiteList(): took: " + (new Date().getTime() - t0) + "ms");
-        this.winFunc('clearTimeout', saveTimer);
+        clearTimeout(saveTimer);
         saveTimer = null;
     };
 
@@ -591,7 +563,7 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
         if (saveTimer === null)
             return false;
 
-        this.winFunc('clearTimeout', saveTimer);
+        clearTimeout(saveTimer);
         saveTimer = null;
         return true;
     };

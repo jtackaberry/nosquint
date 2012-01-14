@@ -10,7 +10,6 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
     var zoomAllTimer = null;             // Timer for queueZoomAll()
     var styleAllTimer = null;            // Timer for queueStyleAll()
     var updateStatusTimer = null;        // Timer for queueUpdateStatus()
-    var tooltipDirty = false;            // True if tooltip needs updating on hover
 
     this.init = function() {
         this.gBrowser = gBrowser;
@@ -54,17 +53,9 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
         gBrowser.tabContainer.addEventListener('TabClose', this.handleTabClose, false);
 
         this.zoomAll(null, true);
-        this.styleAll(null);
     };
 
     this.destroy = function() {
-        if (NSQ.storage.dialogs.site)
-            NSQ.storage.dialogs.site.die();
-
-        gBrowser.tabContainer.removeEventListener('TabOpen', this.handleTabOpen, false);
-        gBrowser.tabContainer.removeEventListener('TabSelect', this.handleTabSelect, false);
-        gBrowser.tabContainer.removeEventListener('TabClose', this.handleTabClose, false);
-        window.removeEventListener('DOMMouseScroll', this.handleMouseScroll, false); 
     };
 
 
@@ -78,7 +69,8 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
             var browser = gBrowser.selectedBrowser;
             var text = full = false;
             var increment = NSQ.prefs.zoomIncrement * (event.detail < 0 ? 1 : -1);
-            var img = isImage(browser);
+            //var img = isImage(browser);
+            var img = false;
                 
             if (NSQ.prefs.wheelZoomInvert)
                 increment *= -1;
@@ -88,8 +80,11 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
             else
                 text = Math.round((browser.markupDocumentViewer.textZoom * 100) + increment);
 
-            NSQ.browser.zoom(browser, text, full);
-            NSQ.browser.saveCurrentZoom();
+            //if (!img || !browser.getUserData('nosquint').site) {
+            if (!img) {
+                NSQ.browser.zoom(browser, text, full);
+                NSQ.browser.saveCurrentZoom();
+            }
         }
         event.stopPropagation();
         event.preventDefault();
@@ -167,53 +162,10 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
     };
 
 
-    this.updateStatusTooltip = function() {
-        if (!tooltipDirty)
-            return;
-        tooltipDirty = false;
-
-        // Get cached sitename for current browser.
-        var browser = gBrowser.selectedBrowser;
-        var site = browser.getUserData('nosquint').site;
-        var text = Math.round(browser.markupDocumentViewer.textZoom * 100);
-        var full = Math.round(browser.markupDocumentViewer.fullZoom * 100);
-
-        var e = $('nosquint-status');
-        // updateStatusTooltip() won't be called unless site is not null.
-        $('nosquint-status-tooltip-site').value = site.replace(/%20/g, ' ');
-        $('nosquint-status-tooltip-full').value = full + '%';
-        $('nosquint-status-tooltip-text').value = text + '%';
-
-        var style = this.getStyleForBrowser(browser);
-        var label = $('nosquint-status-tooltip-textcolor');
-        label.style.color = style.colorText || 'inherit';
-        label.style.backgroundColor = style.colorBackground || 'inherit';
-        label.value = (style.colorText || style.colorBackground) ? 'Sample' : 'Site Controlled';
-
-        var vis = $('nosquint-status-tooltip-vis-link');
-        var unvis = $('nosquint-status-tooltip-unvis-link');
-        unvis.value = vis.value = '';
-        vis.style.color = vis.style.textDecoration = 'inherit';
-        unvis.style.color = unvis.style.textDecoration = 'inherit';
-
-        if (!style.linksUnvisited && !style.linksVisited)
-            unvis.value = 'Site Controlled';
-        else {
-            for (let [attr, elem] in items({'linksUnvisited': unvis, 'linksVisited': vis})) {
-                if (style[attr]) {
-                    elem.value = attr.replace('links', '');
-                    elem.style.color = style[attr];
-                    elem.style.textDecoration = style.linksUnderline ? 'underline' : 'inherit';
-                }
-            }
-        }
-    };
-
     /* Updates the status panel and tooltip to reflect current site name
      * and zoom levels.
      */
     this.updateStatus = function() {
-        // Get cached sitename for current browser.
         var browser = gBrowser.selectedBrowser;
         var site = browser.getUserData('nosquint').site;
         // Disable/enable context menu item.
@@ -228,20 +180,45 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
             // Pref indicates we're hiding status panel, no sense in updating.
             return;
 
+        var text = Math.round(browser.markupDocumentViewer.textZoom * 100);
+        var full = Math.round(browser.markupDocumentViewer.fullZoom * 100);
+        var [text_default, full_default] = NSQ.prefs.getZoomDefaults();
+
         var e = $('nosquint-status');
         if (site) {
-            var text = Math.round(browser.markupDocumentViewer.textZoom * 100);
-            var full = Math.round(browser.markupDocumentViewer.fullZoom * 100);
-            var [text_default, full_default] = NSQ.prefs.getZoomDefaults();
-
             if (NSQ.prefs.fullZoomPrimary)
-                e.label = full + '%' + (text == text_default ? '' : (' / ' + text + '%'));
+                e.label = full + '%' + (text == 100 ? '' : (' / ' + text + '%'));
             else
-                e.label = text + '%' + (full == full_default ? '' : (' / ' + full + '%'));
+                e.label = text + '%' + (full == 100 ? '' : (' / ' + full + '%'));
+            $('nosquint-status-tooltip-site').value = site.replace(/%20/g, ' ');
+            $('nosquint-status-tooltip-full').value = full + '%';
+            $('nosquint-status-tooltip-text').value = text + '%';
 
+            var style = this.getStyleForBrowser(browser);
+            var label = $('nosquint-status-tooltip-textcolor');
+            label.style.color = style.colorText || 'inherit';
+            label.style.backgroundColor = style.colorBackground || 'inherit';
+            label.value = (style.colorText || style.colorBackground) ? 'Sample' : 'Site Controlled';
+
+            var vis = $('nosquint-status-tooltip-vis-link');
+            var unvis = $('nosquint-status-tooltip-unvis-link');
+            unvis.value = vis.value = '';
+            vis.style.color = vis.style.textDecoration = 'inherit';
+            unvis.style.color = unvis.style.textDecoration = 'inherit';
+
+            if (!style.linksUnvisited && !style.linksVisited)
+                unvis.value = 'Site Controlled';
+            else {
+                for (let [attr, elem] in items({'linksUnvisited': unvis, 'linksVisited': vis})) {
+                    if (style[attr]) {
+                        elem.value = attr.replace('links', '');
+                        elem.style.color = style[attr];
+                        elem.style.textDecoration = style.linksUnderline ? 'underline' : 'inherit';
+                    }
+                }
+            }
             $('nosquint-status-tooltip').style.display = '';
             e.style.fontStyle = e.style.opacity = 'inherit';
-            tooltipDirty = true;
         } else {
             $('nosquint-status-tooltip').style.display = 'none';
             e.label = 'N/A';
@@ -251,7 +228,6 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
              */
             e.style.opacity = 0.5;
             e.style.fontStyle = 'italic';
-            tooltipDirty = false;
         }
     };
 
@@ -276,11 +252,9 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
      */
     this.getZoomForBrowser = function(browser) {
         var site = browser.getUserData('nosquint').site;
-        debug('getZoomForBrowser(): site=' + site);
-        if (site === undefined) {
+        if (site === null) {
             site = this.getSiteFromBrowser(browser);
             browser.getUserData('nosquint').site = site;
-            debug('getZoomForBrowser(): after getSiteFromBrowser(), site=' + site);
         }
 
         var [text, full] = NSQ.prefs.getZoomForSite(site);
@@ -307,8 +281,6 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
     this.attach = function(browser) {
         var listener = new NSQ.interfaces.ProgressListener(browser);
         browser.addProgressListener(listener, CI.nsIWebProgress.NOTIFY_STATE_DOCUMENT);
-        debug('attach(): attached browser URI=' + browser.docShell.document.URL);
-
         var userData = {
             listener: listener,
             stylers: []
@@ -316,8 +288,6 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
         browser.setUserData('nosquint', userData, null);
 
         browser.addEventListener('DOMFrameContentLoaded', function(event) {
-            if (!event.target.contentWindow)
-                return;
             var styler = NSQ.browser.getDocumentStyler(browser, event.target.contentWindow.document);
             styler();
             browser.getUserData('nosquint').stylers.push(styler);
@@ -332,7 +302,7 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
      */
     this.zoom = function(browser, text, full) {
         if (!browser || (text == false && full == false))
-            return false;
+            return;
 
         var t0 = new Date().getTime();
         if (text == null || full == null) {
@@ -355,7 +325,6 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
             this.queueUpdateStatus();
         var t1 = new Date().getTime();
         debug('zoom(): took ' + (t1-t0));
-        return true;
     };
 
     /* Updates the zoom levels for all tabs; each tab is set to the levels
@@ -402,7 +371,7 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
     this.getCSSFromStyle = function(style) {
         var css = '';
         if (style.colorText || style.colorBackground || style.colorBackgroundImages) {
-            css += 'body,p,div,span,font,ul,li,center,blockquote,h1,h2,h3,h4,h5,table,tr,th,td,iframe,a,b,i {';
+            css += 'body,p,div,span,center,blockquote,h1,h2,h3,h4,h5,table,tr,th,td,iframe,a,b,i {';
             if (style.colorText)
                 css += 'color: ' + style.colorText + ' !important;';
             if (style.colorBackground)
