@@ -114,11 +114,10 @@ NoSquint.interfaces = NoSquint.ns(function() { with (NoSquint) {
                  *
                  * The specific magical incantation to deal with this seems to
                  * be handling STATE_IS_DOCUMENT when site=null.  After a 0ms
-                 * timer, we try to readd the listener that was previously
-                 * added in NSQ.browser.attach().  If it fails, we assume the
-                 * listener from attach() is still there and everything is cool
-                 * after all.  Otherwise, regenerate the site name and
-                 * rezooms/style.
+                 * timer, we try to re-add this listener ('this').  If it
+                 * fails, we assume the listener from attach() is still there
+                 * and everything is cool after all.  Otherwise, regenerate the
+                 * site name and rezooms/style.
                  *
                  * This seems to solve the problem, but feels like a nasty volatile
                  * hack to work around what is probably a firefox bug, and will

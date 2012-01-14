@@ -314,11 +314,6 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
         var listener = new NSQ.interfaces.ProgressListener(browser);
         browser.addProgressListener(listener, CI.nsIWebProgress.NOTIFY_STATE_DOCUMENT);
         debug('attach(): attached browser URI=' + browser.docShell.document.URL);
-        function foo() {
-            debug('BROWSER URI: ' + browser.currentURI.spec);
-            setTimeout(foo, 1000);
-        }
-        //foo();
 
         var userData = {
             listener: listener,
