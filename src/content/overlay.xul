@@ -1,12 +1,37 @@
 <?xml version="1.0"?>
 <!DOCTYPE overlay SYSTEM "chrome://nosquint/locale/overlay.dtd">
+<?xml-stylesheet href="chrome://nosquint/skin/toolbar.css"  type="text/css"?>
+
 <overlay id="nosquint-overlay" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
     <script src="nosquint.js" />
     <script src="init.js" />
 
+    <toolbarpalette id="BrowserToolbarPalette">
+        <toolbaritem id="nosquint-toolbar">
+            <toolbarbutton id="nosquint-button-reduce" class="toolbarbutton-1"
+                           label="Shrink Text" tooltiptext="Makes text smaller for this site"
+                            oncommand="ZoomManager.prototype.getInstance().reduce();" />
+            <toolbarbutton id="nosquint-button-enlarge" class="toolbarbutton-1"
+                           label="Enlarge Text" tooltiptext="Makes text larger for this site"
+                            oncommand="ZoomManager.prototype.getInstance().enlarge();" />
+        </toolbaritem>
+    </toolbarpalette>
+
+    <keyset id="mainKeyset">
+        <key id="nosquint-menu-key" key="0" modifiers="alt" command="cmd_noSquintPrefs" />
+    </keyset>
+
+    <commandset id="mainCommandSet">
+        <command id="cmd_noSquintPrefs" oncommand="NoSquint.openPrefsDialog()" />
+    </commandset>
+
     <menupopup id="menu_ToolsPopup">
-        <menuitem id="nosquint-menuitem" label="&nosquint;" oncommand="NoSquint.onMenuItemCommand(event);"
-                  insertafter="devToolsSeparator" />
+        <menuitem id="nosquint-menuitem" label="&nosquint.label;" oncommand="NoSquint.openPrefsDialog()"
+                  key="nosquint-menu-key" accesskey="&nosquint.accesskey;" insertafter="devToolsSeparator" />
     </menupopup>
 
+    <statusbar id="status-bar">
+        <statusbarpanel class="statusbarpanel-iconic-text" id="nosquint-status" label="100%" 
+                        onclick="NoSquint.openPrefsDialog()" src="chrome://nosquint/skin/icon-enlarge-16.png" />
+    </statusbar>
 </overlay> 

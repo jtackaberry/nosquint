@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/global.css"  type="text/css"?>
+<!DOCTYPE window SYSTEM "chrome://nosquint/locale/help.dtd">
+
+<dialog xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        xmlns:html="http://www.w3.org/1999/xhtml"
+        title="&ns.help.title;"
+        buttons="accept" 
+        ondialogaccept="return"
+        id="nosquint-help-dialog"
+        persist="width height"
+        width="600"
+        height="700"
+        onload="NoSquintHelp.init(document)"> 
+
+    <script src="help.js" />
+
+    <dialogheader title="&ns.help.subtitle;" description="&ns.help.title;" />
+    <groupbox flex="1">
+        <browser type="content" src="chrome://nosquint/locale/help.html" id="nosquint-help-browser" flex="1" />
+    </groupbox>
+</dialog>

@@ -1,28 +1,20 @@
 <?xml version="1.0"?>
-<RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#" 
-     xmlns:em="http://www.mozilla.org/2004/em-rdf#">
-
-  <Description about="urn:mozilla:install-manifest">
-  
-    <em:id>nosquint@urandom.ca</em:id>
-    <em:name>No Squint</em:name>
-    <em:version>0.9.1.1</em:version>
-    <em:description>Zooms text by user-configurable percentage</em:description>
-    <em:creator>Jason Tackaberry</em:creator>
-   
-    <em:homepageURL>http://urandom.ca/nosquint/</em:homepageURL>
-    <em:optionsURL>chrome://nosquint/content/prefs.xul</em:optionsURL>
-    <em:iconURL>chrome://nosquint/content/icon-32.png</em:iconURL>
-
-    <!-- Firefox -->
-    <em:targetApplication>
-      <Description>
-        <em:id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</em:id>
-        <em:minVersion>1.5</em:minVersion>
-        <em:maxVersion>2.0.0.*</em:maxVersion>
-      </Description>
-    </em:targetApplication>
-
-  </Description>
-
-</RDF>
+<RDF:RDF xmlns:em="http://www.mozilla.org/2004/em-rdf#"
+         xmlns:NC="http://home.netscape.com/NC-rdf#"
+         xmlns:RDF="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <RDF:Description RDF:about="urn:mozilla:install-manifest"
+                   em:id="nosquint@urandom.ca"
+                   em:name="No Squint"
+                   em:version="1.0.0"
+                   em:description="Zooms text by user-configurable percentage"
+                   em:creator="Jason Tackaberry"
+                   em:homepageURL="http://urandom.ca/nosquint/"
+                   em:optionsURL="chrome://nosquint/content/prefs.xul"
+                   em:iconURL="chrome://nosquint/content/icon-32.png">
+    <em:targetApplication RDF:resource="rdf:#$AZWNY2"/>
+  </RDF:Description>
+  <RDF:Description RDF:about="rdf:#$AZWNY2"
+                   em:id="{ec8030f7-c20a-464f-9b0e-13a3a9e97384}"
+                   em:minVersion="2.0"
+                   em:maxVersion="2.0.0.*" />
+</RDF:RDF>

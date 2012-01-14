@@ -1,0 +1,276 @@
+<html>
+
+<style type="text/css">
+    body {
+        font-size: 110%;
+        padding: 0;
+        margin: 0;
+        text-align: justify;
+    }
+
+    ol {
+        text-align: left;
+    }
+
+    h2,h3 {
+        padding-left: 1em;
+    }
+
+    p,ol,li {
+        margin-left: 1em;
+        margin-right: 1.5em;
+    }
+
+    div.indent {
+        padding-left: 0.5em;
+    }
+
+    ul li b {
+        background-color: #eee;
+        padding: 0.2em;
+    }
+    ol li {
+        margin-bottom: 0.5em;
+    }
+
+    code {
+        font-size: 115%;
+        background-color: #fafafa;
+    }
+    h2 {
+        margin-top: 0.5em;
+        padding: 5px;
+        border-top: 1px solid #aaa;
+        border-bottom: 1px solid #aaa;
+        background-color: #f1f4fd;
+        font-family: sans-serif;
+    }
+    h3 {
+        font-family: sans-serif;
+    }
+
+</style>
+
+<body>
+<h2>Options Tab</h2>
+<h3>General Options</h3>
+<ul>
+    <li>
+        <b>Default text zoom level</b>
+            <p>This is the zoom level applied to all pages by default.  A value
+            of 100% is the standard Firefox text size without NoSquint.  With
+            NoSquint, you can override this value to be larger or smaller.</p>
+
+            <p>Modifying the text zoom when visiting a web page will override this
+            value for that site.</p>
+    </li>
+    <li>
+        <b>Zoom increment</b>
+            <p>You can change the text zoom for a page from the View menu, by
+            using one of the text zoom shortcuts (ctrl-plus/minus or
+            ctrl-mousewheel), or by using the optional toolbar buttons.
+            NoSquint will remember these changes.  This setting specifies what
+            increment, in percent, to use when changing the zoom level.</p>
+    </li>
+    <li>
+        <b>Enable text zoom with ctrl-mousewheel</b>
+            <p>Selecting this option allows you to adjust the text zoom level
+            by pressing and holding the control key while moving the mousewheel
+            up or down.</p>
+    </li>
+    <li>
+        <b>Show current zoom level and site in status bar</b>
+            <p>Selecting this option shows the zoom level and site name in the
+            status bar for the current web page.</p>
+    </li>
+</ul>
+
+<h3>Site Options</h3>
+
+<p>To NoSquint, a site is a web location where all pages under that location
+have the same zoom level, and the site name is derived from the page's
+URL.</p>
+
+<p>In most cases, the site is the domain.  For example, if the current page is
+<code>www2.ibm.com/index.php</code>, NoSquint will consider the site name to be
+<code>ibm.com</code>.  NoSquint will also take into account common
+second-level domains.  For example, if you're visiting
+<code>www.bbc.co.uk</code>, NoSquint will consider the site name to be
+<code>bbc.co.uk</code>.</p>
+
+<p>The default behaviour should work almost all the time.  When it doesn't, you
+can control how NoSquint determines site names in the Exceptions Tab.</p>
+
+<ul>
+    <li>
+        <b>Use the default text zoom level for all sites</b>
+            <p>One of NoSquint's features is the ability to remember custom
+            text zoom levels for individual sites.  If you're not interested
+            this and want to use the same level for all sites, or you just
+            don't want NoSquint to remember any manual changes, select this
+            option.</p>
+    </li>
+    <li>
+        <b>Remember text zoom level per site</b>
+            <p>With this option selected, NoSquint will remember any changes
+            you make to the text zoom level (via ctrl-plus/minus keys or
+            ctrl-mousewheel) for a given site.  Next time you visit that site,
+            NoSquint will change the text zoom to the level previously used on
+            that site.</p>
+    </li>
+    <li>
+        <b>Forget zoom settings for sites not visited in the last ...</b>
+            <p>With the "remember text zoom level per site" option enabled,
+            NoSquint keeps track of all zoom level changes for sites, even
+            sites you only visit once.  This option is house cleaning: if you
+            haven't visited a site (for which you've set a non-default zoom
+            level) for the specified number of months, NoSquint will forget the
+            setting.</p>
+    </li>
+    <li>
+        <b>Zoom level for the current site (example.com)</b>
+            <p>Sets the text zoom level to the specified value for the site in
+            the current browser tab or window.</p>
+    </li>
+</ul>
+
+<h2>Exceptions Tab</h2>
+
+<p>Because not all web sites are structured the same, sometimes the default
+logic NoSquint uses to determine the site name doesn't work the way you want it
+to.  By way of exceptions, you can control how NoSquint determines what
+constitutes a separate site.</p>
+
+<h3>Use Cases</h3>
+<p>Exceptions are powerful and expressive, and unfortunately can be confusing.
+Before going into a detailed explanation, let's first examine some common
+use-cases.  Hopefully one of these examples applies to your case.</p>
+
+<ol>
+    <li>
+        <b>Problem:</b> different subdomains on SourceForge, e.g.
+        <code>freevo.sourceforge.net</code> and
+        <code>audacity.sourceforge.net</code>, are wrongly treated as the same
+        site (<code>sourceforge.net</code>)<br />
+
+        <b>Solution:</b> add an exception with the pattern
+        <code>*.sourceforge.net</code>
+    </li>
+
+    <li>
+        <b>Problem:</b> <code>example.com/users/mary</code> and
+        <code>example.com/users/john</code> are wrongly treated as the same
+        site (<code>example.com</code>)<br />
+
+        <b>Solution:</b> add an exception with the pattern
+        <code>example.com/users/*</code>
+    </li>
+
+    <li>
+        <b>Problem:</b> I use Google Mail (<code>mail.google.com</code>) and
+        Google Reader (<code>google.com/reader</code>) and would like these
+        treated as sites separate from <code>google.com</code><br />
+
+        <b>Solution:</b> add an exception with the pattern
+        <code>mail.google.com</code>; add another exception with the pattern
+        <code>google.com/reader</code>
+    </li>
+
+    <li>
+        <b>Problem:</b> my company's intranet is at
+        <code>intra.example.com</code>, but I'd like our wiki, located under
+        <code>intra.example.com/wiki</code> to be treated separately from the
+        rest of the intranet.<br />
+
+        <b>Solution:</b> add an exception with the pattern
+        <code>intra.example.com/wiki</code>
+    </li>
+
+    <li>
+        <b>Problem:</b> Google Mail, Google Groups, and in fact all hosts on
+        Google should be treated as separate sites.  But the country (the
+        top-level domain) shouldn't matter.  So <code>mail.google.ca</code>
+        should be the same site as <code>mail.google.de</code>, but a different
+        site from <code>groups.google.de</code>, which itself would be the same
+        site as <code>groups.google.fi</code><br />
+
+        <b>Solution:</b> add an exception with the pattern <code>*.google.[*]</code>
+    </li>
+
+    <li>
+        <b>Problem:</b> my company has several web applications that are
+        distributed across multiple servers.
+        <code>example.com/server1/apps/app1</code> should be considered the
+        same site as <code>example.com/server2/apps/app1</code>, but there
+        could also be <code>example.com/server1/apps/app3</code> that should be
+        a separate site.<br />
+
+        <b>Solution:</b> add an exception with the pattern
+        <code>example.com/[*]/apps/*</code>
+    </li>
+    <li>
+        <b>Problem:</b> same scenario the previous one, but sometimes the
+        server isn't in the URL, so <code>example.com/apps/app1</code> is
+        the same site as <code>example.com/server1/apps/app1</code>.<br/>
+
+        <b>Solution:</b> add an exception with the pattern
+        <code>example.com/[**]apps/*</code>
+    </li>
+</ol>
+</div>
+
+<h3>Gory Details</h3>
+<p>What follows is a technical explanation of exceptions.  If you're not an
+advanced user, this section may create a fair amount of confusion; refer
+instead to the use-cases above to follow by example.</p>
+
+<p>Exception patterns may contain zero or more of the following possible wildcards:
+<ul>
+    <li>
+        <code>*</code> &ndash; When included in the host name, matches any character
+        except a dot ('.').  When included in the path, matches any character
+        except a slash ('/').  Does not match the empty string.
+    </li>
+    <li>
+        <code>**</code> &ndash; Matches any sequence of characters.  Does match
+        the empty string.
+    </li>
+</ul>
+</p>
+
+<p>Site names are arbitrary strings that represent a given site and are
+computed by NoSquint based on the current page's URL and the user-defined list
+of exceptions.  For instance, both <code>foo.example.com</code> and
+<code>myapp.*.example.com</code> could be site names, depending on the
+exceptions defined.  NoSquint looks up zoom levels based on the site name.  The
+site name, as determined by NoSquint, is by default displayed in the status bar
+beside the current zoom level.</p>
+
+<p>When a wildcard is enclosed in square brackets (i.e. <code>[*]</code> or
+<code>[**]</code>), the literal wildcard (<code>*</code> or <code>**</code>)
+will be used in the site name instead of the characters the wildcard matches.
+This is allows you to group together locations.  For example, if the page's URL
+is <code>google.ca</code> and you've defined an exception
+<code>google.[*]</code>, the site name will be <code>google.*</code>.  Since
+<code>google.fi</code> matches this pattern, the site name would also be
+<code>google.*</code>.  Therefore, <code>google.ca</code> and
+<code>google.fi</code> would be considered the same site.</p>
+
+<p>Hostnames and paths are evaluated separately; an exception pattern is split
+into two sub-patterns, one for the host, and one for the path.  These
+sub-patterns match substrings, but hosts are right-anchored, while paths are
+left-anchored.  This means that any wildcards specified in the host name will
+not match any characters in the path, and vice versa.  When the hostname part
+of a pattern is only <code>*</code>, it matches the domain of the page's URL.
+For example, for <code>www.google.com</code>, a single <code>*</code> matches
+<code>google.com</code>; for <code>www.bbc.co.uk</code> it matches
+<code>bbc.co.uk</code>.</p>
+
+<p>When multiple exceptions match a page's URL, NoSquint will use the exception
+that matches the most non-wildcard characters in the host name.  If there are
+still multiple exceptions in that narrowed list, the exception that matches the
+most non-wildcard characters in the path is then chosen.  If still there are
+multiple exceptions, the last one is chosen.</p>
+
+</body>
+</html>

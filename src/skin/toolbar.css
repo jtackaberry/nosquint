@@ -1,0 +1,15 @@
+#nosquint-button-reduce {
+      list-style-image: url("chrome://nosquint/skin/icon-reduce-24.png");
+}
+
+toolbar[iconsize="small"] #nosquint-button-reduce  {
+      list-style-image: url("chrome://nosquint/skin/icon-reduce-16.png");
+}
+
+#nosquint-button-enlarge {
+      list-style-image: url("chrome://nosquint/skin/icon-enlarge-24.png");
+}
+
+toolbar[iconsize="small"] #nosquint-button-enlarge {
+      list-style-image: url("chrome://nosquint/skin/icon-enlarge-16.png");
+}
