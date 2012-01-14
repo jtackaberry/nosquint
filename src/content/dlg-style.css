@@ -1,0 +1,35 @@
+p {
+    max-width: 40em; 
+}
+
+label.percent {
+    margin-left: -0.18em;
+}
+
+.indent {
+    margin-left: 2.5em;
+}
+
+button[dlgtype="extra1"] {
+      list-style-image: url("chrome://nosquint/skin/icon-statusbar-16.png");
+}
+
+#warning-box {
+    border: 1px solid #e0cd64;
+    background-color: #fffac4;
+    padding: 3px 15px 3px 15px;
+    margin: 0.5em 2em;
+    vertical-align: middle;
+    font-weight: bold;
+    -moz-border-radius: 20px;
+}
+
+#warning-box div {
+    padding-left: 0.7em;
+    width: 400px;
+    font-weight: normal;
+}
+
+#warning-box image {
+}
+

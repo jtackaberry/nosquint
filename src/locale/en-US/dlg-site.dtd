@@ -1,0 +1,7 @@
+<!ENTITY ns.pref.title "NoSquint Site Settings">
+<!ENTITY ns.pref.button.global.label "Global Settings">
+<!ENTITY ns.pref.button.global.accesskey "G">
+
+<!ENTITY ns.pref.fullZoom.label "Full zoom level">
+<!ENTITY ns.pref.textZoom.label "Text zoom level">
+<!ENTITY ns.pref.button.useDefault.label "Use Default">

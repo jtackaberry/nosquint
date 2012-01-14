@@ -1,0 +1,472 @@
+// chrome://browser/content/browser.xul
+
+/******************************************************************************
+ * Browser
+ *
+ */
+NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
+    const CI = Components.interfaces;
+    this.id = 'NoSquint.browser';
+    var zoomAllTimer = null;             // Timer for queueZoomAll()
+    var styleAllTimer = null;            // Timer for queueStyleAll()
+    var updateStatusTimer = null;        // Timer for queueUpdateStatus()
+
+    this.init = function() {
+        this.gBrowser = gBrowser;
+        this.updateZoomMenu();
+
+        this.observer = new NSQ.interfaces.Observer();
+        this.observer.watcher = {
+            onEnterPrivateBrowsing: function() {
+                this.closeSiteSettings();
+                // Switching the private browsing mode.  Store any current pending
+                // changes now.
+                NSQ.prefs.saveSiteList(true);
+                // Save current (non-private) site data for when we exit private
+                // browsing.
+                this.origSites = NSQ.prefs.cloneSites();
+            },
+
+            onExitPrivateBrowsing: function() {
+                this.closeSiteSettings();
+                // Restore previously saved site data and rezoom/style all tabs.
+                NSQ.prefs.sites = this.origSites;
+                this.origSites = null;
+                NSQ.browser.zoomAll();
+                NSQ.browser.styleAll();
+            },
+
+            closeSiteSettings: function() {
+                if (NSQ.storage.dialogs.site)
+                    NSQ.storage.dialogs.site.die();
+            }
+        };
+
+        if (this.observer.inPrivateBrowsing)
+            this.observer.watcher.onEnterPrivateBrowsing();
+
+        window.addEventListener('DOMMouseScroll', this.handleMouseScroll, false); 
+        // XXX: used for image zoom, which feature is currently removed.
+        //window.addEventListener("resize", this.handleResize, false);
+        gBrowser.tabContainer.addEventListener('TabOpen', this.handleTabOpen, false);
+        gBrowser.tabContainer.addEventListener('TabSelect', this.handleTabSelect, false);
+        gBrowser.tabContainer.addEventListener('TabClose', this.handleTabClose, false);
+
+        this.zoomAll(null, true);
+    };
+
+    this.destroy = function() {
+    };
+
+
+    /* Event handlers.  Reminder: 'this' will not be NSQ.browser
+     */
+
+    this.handleMouseScroll = function(event) {
+        if (!event.ctrlKey)
+            return;
+        if (NSQ.prefs.wheelZoomEnabled) {
+            var browser = gBrowser.selectedBrowser;
+            var text = full = false;
+            var increment = NSQ.prefs.zoomIncrement * (event.detail < 0 ? 1 : -1);
+            //var img = isImage(browser);
+            var img = false;
+                
+            if (NSQ.prefs.wheelZoomInvert)
+                increment *= -1;
+
+            if (NSQ.prefs.fullZoomPrimary && !event.shiftKey || !NSQ.prefs.fullZoomPrimary && event.shiftKey || img)
+                full = Math.round((browser.markupDocumentViewer.fullZoom * 100) + increment);
+            else
+                text = Math.round((browser.markupDocumentViewer.textZoom * 100) + increment);
+
+            //if (!img || !browser.getUserData('nosquint').site) {
+            if (!img) {
+                NSQ.browser.zoom(browser, text, full);
+                NSQ.browser.saveCurrentZoom();
+            }
+        }
+        event.stopPropagation();
+        event.preventDefault();
+    };
+
+
+    // Would be used for image zoom, but currently not implemented.
+    this.handleResize = function(event) {
+    };
+
+    this.handleTabOpen = function(event) {
+        var browser = event.target.linkedBrowser;
+        NSQ.browser.attach(browser);
+        NSQ.browser.zoom(browser);
+    };
+
+    this.handleTabSelect = function(event) {
+        NSQ.browser.updateStatus();
+    };
+
+    this.handleTabClose = function(event) {
+        var browser = event.target.linkedBrowser;
+        browser.removeProgressListener(browser.getUserData('nosquint').listener);
+        browser.setUserData('nosquint', null, null);
+    };
+
+
+    /* Updates View | Zoom menu to replace the default Zoom In/Out menu
+     * items with Primary Zoom In/Out and Secondary Zoom In/Out.  Also the
+     * "Zoom Text Only" menuitem is replaced with an option to open the NS
+     * Global prefs.
+     */
+    this.updateZoomMenu = function() {
+        var popup = $('viewFullZoomMenu').childNodes[0];
+        var full_zoom_primary = NSQ.prefs.fullZoomPrimary;
+
+        if (!$('nosquint-view-menu-settings')) {
+            for (let [i, child] in enumerate(popup.childNodes)) {
+                if (child.id == 'toggle_zoom')
+                    child.style.display = 'none';
+                if (child.nodeName != 'menuitem' || (child.command != 'cmd_fullZoomEnlarge' && 
+                    child.command != 'cmd_fullZoomReduce'))
+                    continue;
+
+                var icon = document.defaultView.getComputedStyle(child, null).getPropertyValue('list-style-image');
+                var enlarge = child.command == 'cmd_fullZoomEnlarge';
+                var item = document.createElement('menuitem');
+                var suffix = "noSquint" + (enlarge ? "Enlarge" : "Reduce") + "Secondary";
+                item.setAttribute("command",  "cmd_" + suffix);
+                item.setAttribute("key",  "key_" + suffix);
+                item.style.listStyleImage = icon;
+                popup.insertBefore(item, popup.childNodes[i + 2]);
+            }
+
+            var item = document.createElement('menuitem');
+            item.id = 'nosquint-view-menu-settings';
+            item.setAttribute('command', 'cmd_noSquintPrefs');
+            item.setAttribute('label', NSQ.strings.zoomMenuSettings);
+            popup.appendChild(item);
+        }
+
+        for (let child in iter(popup.childNodes)) {
+            if (child.nodeName != 'menuitem')
+                continue;
+            var command = child.getAttribute('command');
+            if (command == "cmd_fullZoomEnlarge")
+                child.setAttribute('label', NSQ.strings['zoomMenuIn' + (full_zoom_primary ? "Full" : "Text")]);
+            else if (command == "cmd_noSquintEnlargeSecondary")
+                child.setAttribute('label', NSQ.strings['zoomMenuIn' + (full_zoom_primary ? "Text" : "Full")]);
+            if (command == "cmd_fullZoomReduce")
+                child.setAttribute('label', NSQ.strings['zoomMenuOut' + (full_zoom_primary ? "Full" : "Text")]);
+            else if (command == "cmd_noSquintReduceSecondary")
+                child.setAttribute('label', NSQ.strings['zoomMenuOut' + (full_zoom_primary ? "Text" : "Full")]);
+        }
+    };
+
+
+    /* Updates the status panel and tooltip to reflect current site name
+     * and zoom levels.
+     */
+    this.updateStatus = function() {
+        var browser = gBrowser.selectedBrowser;
+        var site = browser.getUserData('nosquint').site;
+        // Disable/enable context menu item.
+        $('nosquint-menu-settings').disabled = (site === null);
+
+        if (updateStatusTimer) {
+            clearTimeout(updateStatusTimer);
+            updateStatusTimer = null;
+        }
+
+        if (NSQ.prefs.hideStatus)
+            // Pref indicates we're hiding status panel, no sense in updating.
+            return;
+
+        var text = Math.round(browser.markupDocumentViewer.textZoom * 100);
+        var full = Math.round(browser.markupDocumentViewer.fullZoom * 100);
+        var [text_default, full_default] = NSQ.prefs.getZoomDefaults();
+
+        var e = $('nosquint-status');
+        if (site) {
+            if (NSQ.prefs.fullZoomPrimary)
+                e.label = full + '%' + (text == 100 ? '' : (' / ' + text + '%'));
+            else
+                e.label = text + '%' + (full == 100 ? '' : (' / ' + full + '%'));
+            $('nosquint-status-tooltip-site').value = site.replace(/%20/g, ' ');
+            $('nosquint-status-tooltip-full').value = full + '%';
+            $('nosquint-status-tooltip-text').value = text + '%';
+
+            var style = this.getStyleForBrowser(browser);
+            var label = $('nosquint-status-tooltip-textcolor');
+            label.style.color = style.colorText || 'inherit';
+            label.style.backgroundColor = style.colorBackground || 'inherit';
+            label.value = (style.colorText || style.colorBackground) ? 'Sample' : 'Site Controlled';
+
+            var vis = $('nosquint-status-tooltip-vis-link');
+            var unvis = $('nosquint-status-tooltip-unvis-link');
+            unvis.value = vis.value = '';
+            vis.style.color = vis.style.textDecoration = 'inherit';
+            unvis.style.color = unvis.style.textDecoration = 'inherit';
+
+            if (!style.linksUnvisited && !style.linksVisited)
+                unvis.value = 'Site Controlled';
+            else {
+                for (let [attr, elem] in items({'linksUnvisited': unvis, 'linksVisited': vis})) {
+                    if (style[attr]) {
+                        elem.value = attr.replace('links', '');
+                        elem.style.color = style[attr];
+                        elem.style.textDecoration = style.linksUnderline ? 'underline' : 'inherit';
+                    }
+                }
+            }
+            $('nosquint-status-tooltip').style.display = '';
+            e.style.fontStyle = e.style.opacity = 'inherit';
+        } else {
+            $('nosquint-status-tooltip').style.display = 'none';
+            e.label = 'N/A';
+            /* Lame: the documentation for statusbarpanel says there is a
+             * disabled attribute.  The DOM Inspector says otherwise.  So we
+             * must simulate the disabled look.
+             */
+            e.style.opacity = 0.5;
+            e.style.fontStyle = 'italic';
+        }
+    };
+
+    /* Queues an updateStatus().
+     */
+    this.queueUpdateStatus = function() {
+        if (!updateStatusTimer)
+            updateStatusTimer = setTimeout(function() NSQ.browser.updateStatus(), 1);
+    };
+
+    /* Given a browser, returns the site name.  Does not use the cached
+     * site name user data attached to the browser.
+     */
+    this.getSiteFromBrowser = function(browser) {
+        if (isChrome(browser))
+            return null;
+        return NSQ.prefs.getSiteFromURI(browser.currentURI);
+    };
+
+    /* Returns a 2-tuple [text, full] zoom levels for the given browser.
+     * Defaults are applied.
+     */
+    this.getZoomForBrowser = function(browser) {
+        var site = browser.getUserData('nosquint').site;
+        if (site === null) {
+            site = this.getSiteFromBrowser(browser);
+            browser.getUserData('nosquint').site = site;
+        }
+
+        var [text, full] = NSQ.prefs.getZoomForSite(site);
+        var [text_default, full_default] = NSQ.prefs.getZoomDefaults();
+        return [text || text_default, full || full_default];
+    };
+
+
+    /* Saves the current tab's zoom level in the site list.
+     */
+    this.saveCurrentZoom = function() {
+        var browser = gBrowser.selectedBrowser;
+        var site = browser.getUserData('nosquint').site;
+        if (!site)
+            // Nothing to save.  Chrome maybe.
+            return;
+
+        var text = Math.round(browser.markupDocumentViewer.textZoom * 100);
+        var full = Math.round(browser.markupDocumentViewer.fullZoom * 100);
+        debug("saveCurrentZoom(): site=" + site);
+        NSQ.prefs.updateSiteList(site, [text, full]);
+    };
+
+    this.attach = function(browser) {
+        var listener = new NSQ.interfaces.ProgressListener(browser);
+        browser.addProgressListener(listener, CI.nsIWebProgress.NOTIFY_STATE_DOCUMENT);
+        var userData = {
+            listener: listener,
+            stylers: []
+        };
+        browser.setUserData('nosquint', userData, null);
+
+        browser.addEventListener('DOMFrameContentLoaded', function(event) {
+            var styler = NSQ.browser.getDocumentStyler(browser, event.target.contentWindow.document);
+            styler();
+            browser.getUserData('nosquint').stylers.push(styler);
+        }, true);
+
+    };
+
+
+    /* Zooms text and/or full zoom to the specified level.  If text or full is
+     * null, the default for browser is used.  If it is false, it is
+     * untouched.  Status bar is updated, but new level is NOT saved.
+     */
+    this.zoom = function(browser, text, full) {
+        if (!browser || (text == false && full == false))
+            return false;
+
+        var t0 = new Date().getTime();
+        if (text == null || full == null) {
+            var [site_text, site_full] = this.getZoomForBrowser(browser);
+            if (text == null)
+                text = text || site_text;
+            if (full == null)
+                full = full || site_full;
+            // Only zoom web content, not chrome or plugins (e.g. PDF)
+            if (!browser.getUserData('nosquint').site)
+                [text, full] = [100, 100];
+        }
+
+        debug("zoom(): text=" + text + ", full=" + full);
+        if (text !== false)
+            browser.markupDocumentViewer.textZoom = text / 100.0;
+        if (full !== false)
+            browser.markupDocumentViewer.fullZoom = full / 100.0;
+        if (browser == gBrowser.selectedBrowser)
+            this.queueUpdateStatus();
+        var t1 = new Date().getTime();
+        debug('zoom(): took ' + (t1-t0));
+        return true;
+    };
+
+    /* Updates the zoom levels for all tabs; each tab is set to the levels
+     * for the current URIs of each browser.  If 'attach' is true, then
+     * ProgressListeners are attached to each browser as well.  This is
+     * useful on initialization, where we can hook into any tabs that may
+     * have been opened prior to initialization.
+     */
+    this.zoomAll = function(site, attach) {
+        debug("zoomAll(): site=" + site + ", attach=" + attach);
+        for (let browser in iter(gBrowser.browsers)) {
+            if (site && site != browser.getUserData('nosquint').site)
+                continue;
+            if (attach)
+                this.attach(browser);
+            this.zoom(browser);
+        }
+        clearTimeout(zoomAllTimer);
+        zoomAllTimer = null;
+    };
+
+    /* Queues a zoomAll.  Useful when we might otherwise call zoomAll() 
+     * multiple times, such as in the case of multiple preferences being
+     * updated at once.
+     */
+    this.queueZoomAll = function(site, delay) {
+        if (delay === undefined)
+            delay = 1;
+        if (!zoomAllTimer)
+            zoomAllTimer = setTimeout(function() NSQ.browser.zoomAll(site), delay);
+    };
+
+
+    /* Returns a style object for the given browser.  Defaults are applied.
+     */
+    this.getStyleForBrowser = function(browser) {
+        var site = browser.getUserData('nosquint').site;
+        var style = NSQ.prefs.getStyleForSite(site);
+        return NSQ.prefs.applyStyleGlobals(style);
+    };
+
+    /* Returns CSS string for the given style object.
+     */
+    this.getCSSFromStyle = function(style) {
+        var css = '';
+        if (style.colorText || style.colorBackground || style.colorBackgroundImages) {
+            css += 'body,p,div,span,center,blockquote,h1,h2,h3,h4,h5,table,tr,th,td,iframe,a,b,i {';
+            if (style.colorText)
+                css += 'color: ' + style.colorText + ' !important;';
+            if (style.colorBackground)
+                css += 'background-color: ' + style.colorBackground + ' !important;';
+            if (style.colorBackgroundImages)
+                css += 'background-image: none !important;';
+            css += '}\n';
+        };
+
+        if (style.linksUnvisited)
+            css += 'a:link { color: ' + style.linksUnvisited + ' !important; }\n';
+        if (style.linksVisited)
+            css += 'a:visited { color: ' + style.linksVisited + ' !important; }\n';
+        if (style.linksUnderline)
+            css += 'a { text-decoration: underline !important; }\n';
+
+        return css;
+    };
+
+    /* Returns a function that, when invoked, will style the given document
+     * from the given browser.  The styler function can be explicitly passed
+     * a style attributes object to override the calculated one for the site.
+     */
+    this.getDocumentStyler = function(browser, doc) {
+        var styleobj = null;
+        function styler(style) {
+            if (!style)
+                style = NSQ.browser.getStyleForBrowser(browser);
+
+            debug("styler(): enabled=" + style.enabled + ", obj=" + styleobj);
+            if (style.enabled) {
+                if (!styleobj) {
+                    styleobj = doc.createElementNS('http://www.w3.org/1999/xhtml', 'style');
+                    // This doesn't appear to be necessary, and in any case seems
+                    // to not work when there are CSS problems on the site (like google
+                    // sometimes has).
+                    //var head = doc.getElementsByTagName('head');
+                    //var node = (head ? head[0] : doc.documentElement);
+                    //node.insertBefore(styleobj, node.childNodes[0]);
+                    doc.documentElement.appendChild(styleobj);
+                }
+                var css = NSQ.browser.getCSSFromStyle(style);
+                styleobj.textContent = css;
+            } else if (styleobj) {
+                styleobj.parentNode.removeChild(styleobj);
+                // Must recreate style object if we want to attach later.
+                styleobj = null;
+            }
+        }
+        return styler;
+    };
+
+    /* Adds a styler to the given document if none exist, and invokes all
+     * attached stylers with the given style.
+     *
+     * If the document cannot be styled, false is returned.  Otherwise, true.
+     */
+    this.style = function(browser, style) {
+        var doc = browser.docShell.document;
+        if (!doc.documentElement)
+            // Nothing to style; chrome?
+            return false;
+
+        var stylers = browser.getUserData('nosquint').stylers;
+        if (stylers.length == 0)
+            // Initial styling; attach styler for document (or frameset).
+            stylers.push(this.getDocumentStyler(browser, doc));
+
+        debug("style(): num stylers=" + stylers.length);
+        for (let styler in iter(stylers))
+            styler(style);
+
+        if (browser == gBrowser.selectedBrowser)
+            this.queueUpdateStatus();
+
+        return true;
+    };
+
+    this.styleAll = function(site) {
+        for (let browser in iter(gBrowser.browsers)) {
+            if (site && site != browser.getUserData('nosquint').site)
+                continue;
+            this.style(browser);
+        }
+        clearTimeout(styleAllTimer);
+        styleAllTimer = null;
+    };
+
+    /* Queues a styleAll.
+     */
+    this.queueStyleAll = function(site, delay) {
+        if (delay === undefined)
+            delay = 1;
+        if (!styleAllTimer)
+            styleAllTimer = setTimeout(function() NSQ.browser.styleAll(site), delay);
+    };
+}});

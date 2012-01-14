@@ -1,0 +1,118 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/global.css"  type="text/css"?>
+<?xml-stylesheet href="chrome://nosquint/content/dlg-style.css"  type="text/css"?>
+<!DOCTYPE window [
+    <!ENTITY % siteDTD SYSTEM "chrome://nosquint/locale/dlg-site.dtd" >
+    %siteDTD;
+    <!ENTITY % globalDTD SYSTEM "chrome://nosquint/locale/dlg-global.dtd" >
+    %globalDTD;
+]>
+
+<dialog xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        xmlns:html="http://www.w3.org/1999/xhtml"
+        title="&ns.pref.title;"
+        buttons="extra1,accept,cancel" 
+        ondialogaccept="NoSquint.dialogs.site.close()"
+        ondialogcancel="NoSquint.dialogs.site.cancel()"
+        ondialogextra1="NoSquint.dialogs.site.openGlobalSettings()"
+        buttonlabelextra1="&ns.pref.button.global.label;"
+        buttonaccesskeyextra1="&ns.pref.button.global.accesskey;"
+        id="nosquint-dialog-site"
+        persist="screenX screenY">
+
+    <script type="application/x-javascript" src="chrome://nosquint/content/init.js" />
+    <script type="application/x-javascript" src="chrome://nosquint/content/lib.js" />
+    <script type="application/x-javascript" src="chrome://nosquint/content/prefs.js" />
+    <script type="application/x-javascript" src="chrome://nosquint/content/cmd.js" />
+    <script type="application/x-javascript" src="chrome://nosquint/content/dlg-site.js" />
+
+    <groupbox id="site">
+        <caption id='caption' />
+        <vbox flex='1'>
+            <hbox id="warning-box" align="center">
+                <image class="alert-icon" />
+                <html:div id='warning-box-content'></html:div>
+            </hbox>
+
+            <grid id="siteZoom-box" flex="1">
+                <columns>
+                    <column />
+                    <column />
+                    <column />
+                    <column flex="1" />
+                    <column />
+                </columns>
+                <rows>
+                    <row align="center">
+                        <hbox>
+                            <spacer flex="1" />
+                            <label value="&ns.pref.fullZoom.label;:" />
+                        </hbox>
+                        <scale id="full-zoom-slider" min="40" increment="1" max="300" style="width:200px"
+                               onchange="NoSquint.dialogs.site.sliderChange(this)"/>
+                        <hbox align="center">
+                            <textbox id="full-zoom-level" size="2" type="number" min="40" max="300" increment="5" />
+                            <label class="percent">%</label>
+                        </hbox>
+                        <spacer flex="1" />
+                        <button  label="&ns.pref.button.useDefault.label;"
+                                 id="full-zoom-button" oncommand="NoSquint.dialogs.site.buttonUseDefault(this)" />
+                    </row>
+                    <row align="center">
+                        <hbox>
+                            <spacer flex="1" />
+                            <label value="&ns.pref.textZoom.label;:" />
+                        </hbox>
+                        <scale id="text-zoom-slider" min="40" increment="1" max="300" 
+                               onchange="NoSquint.dialogs.site.sliderChange(this)"/>
+                        <hbox align="center">
+                            <textbox id="text-zoom-level" size="2" type="number" min="40" max="300" increment="5"  />
+                            <label class="percent">%</label>
+                        </hbox>
+                        <spacer flex="1" />
+                        <button  label="&ns.pref.button.useDefault.label;"
+                                 id="text-zoom-button" oncommand="NoSquint.dialogs.site.buttonUseDefault(this)" />
+                    </row>
+                </rows>
+            </grid>
+
+            <hbox flex='1' style='padding-top: 1em'>
+                <groupbox flex='1'>
+                    <caption label="&ns.pref.colors.colors.caption;" />
+                    <vbox>
+                        <hbox>
+                            <checkbox id="colorText" label="&ns.pref.colors.colors.text.label;"
+                                      checked="false" flex="1" />
+                            <colorpicker type='button' />
+                        </hbox>
+                        <hbox>
+                            <checkbox id="colorBackground" label="&ns.pref.colors.colors.background.label;"
+                                      checked="false" flex="1" />
+                            <colorpicker type='button' />
+                        </hbox>
+                        <checkbox id="colorBackgroundImages" label="&ns.pref.colors.colors.images.label;"
+                                  checked="false" flex="1" />
+                    </vbox>
+                </groupbox>
+                <groupbox flex='1'>
+                    <caption label="&ns.pref.colors.links.caption;" />
+                    <vbox>
+                        <hbox>
+                            <checkbox id="linksUnvisited" label="&ns.pref.colors.links.unvisited.label;" 
+                                      checked="false" flex="1" />
+                            <colorpicker type='button' />
+                        </hbox>
+                        <hbox>
+                            <checkbox id="linksVisited" label="&ns.pref.colors.links.visited.label;"
+                                      checked="false" flex="1" />
+                            <colorpicker type='button' />
+                        </hbox>
+                        <checkbox id="linksUnderline" label="&ns.pref.colors.links.underline.label;"
+                                  checked="false" flex="1" />
+                    </vbox>
+                </groupbox>
+            </hbox>
+
+        </vbox>
+    </groupbox>
+</dialog>

@@ -3,6 +3,7 @@ ab.ca
 ab.se
 abo.pa
 ac.ae
+ac.am
 ac.at
 ac.bd
 ac.be
@@ -14,6 +15,7 @@ ac.fj
 ac.fk
 ac.gg
 ac.gn
+ac.hu
 ac.id
 ac.il
 ac.im
@@ -23,6 +25,7 @@ ac.je
 ac.jp
 ac.ke
 ac.kr
+ac.lk
 ac.ma
 ac.mw
 ac.ng
@@ -30,6 +33,7 @@ ac.nz
 ac.om
 ac.pa
 ac.pg
+ac.rs
 ac.ru
 ac.rw
 ac.se
@@ -94,6 +98,7 @@ asso.ht
 asso.mc
 asso.re
 astrakhan.ru
+at.tf
 at.tt
 atm.pl
 ato.br
@@ -114,13 +119,17 @@ be.tt
 bel.tr
 belgie.be
 belgorod.ru
+bg.tf
+bialystok.pl
 bib.ve
 bio.br
 bir.ru
 biz.az
+biz.bh
 biz.cy
 biz.et
 biz.fj
+biz.ly
 biz.mv
 biz.nr
 biz.om
@@ -143,11 +152,14 @@ bryansk.ru
 buryatia.ru
 busan.kr
 c.se
+ca.tf
 ca.tt
 ca.us
 casino.hu
 cbg.ru
+cc.bh
 cci.fr
+ch.tf
 ch.vu
 chambagri.fr
 chel.ru
@@ -174,12 +186,15 @@ cng.br
 cnt.br
 co.ae
 co.ag
+co.am
 co.ao
 co.at
+co.ba
 co.bw
 co.ck
 co.cr
 co.dk
+co.ee
 co.fk
 co.gg
 co.hu
@@ -196,8 +211,10 @@ co.ls
 co.ma
 co.mu
 co.mw
+co.mz
 co.nz
 co.om
+co.rs
 co.rw
 co.st
 co.th
@@ -205,9 +222,11 @@ co.tj
 co.tt
 co.tv
 co.tz
+co.ua
 co.ug
 co.uk
 co.us
+co.uz
 co.ve
 co.vi
 co.yu
@@ -220,11 +239,13 @@ com.af
 com.ag
 com.ai
 com.al
+com.am
 com.an
 com.ar
 com.au
 com.aw
 com.az
+com.ba
 com.bb
 com.bd
 com.bh
@@ -270,6 +291,7 @@ com.jm
 com.jo
 com.kg
 com.kh
+com.ki
 com.kw
 com.ky
 com.kz
@@ -294,6 +316,7 @@ com.mx
 com.my
 com.na
 com.nc
+com.nf
 com.ng
 com.ni
 com.np
@@ -331,6 +354,8 @@ com.tt
 com.tw
 com.ua
 com.uy
+com.uz
+com.vc
 com.ve
 com.vi
 com.vn
@@ -353,6 +378,7 @@ csiro.au
 ct.us
 cul.na
 cv.ua
+cz.tf
 d.se
 daegu.kr
 daejeon.kr
@@ -360,6 +386,7 @@ dagestan.ru
 dc.us
 de.com
 de.net
+de.tf
 de.tt
 de.us
 de.vu
@@ -386,10 +413,12 @@ edu.ac
 edu.af
 edu.ai
 edu.al
+edu.am
 edu.an
 edu.ar
 edu.au
 edu.az
+edu.ba
 edu.bb
 edu.bd
 edu.bh
@@ -406,6 +435,7 @@ edu.dm
 edu.do
 edu.dz
 edu.ec
+edu.ee
 edu.eg
 edu.er
 edu.es
@@ -420,7 +450,9 @@ edu.gu
 edu.hk
 edu.hn
 edu.ht
+edu.hu
 edu.in
+edu.it
 edu.jm
 edu.jo
 edu.kg
@@ -460,6 +492,7 @@ edu.ps
 edu.pt
 edu.py
 edu.qa
+edu.rs
 edu.ru
 edu.rw
 edu.sa
@@ -471,6 +504,7 @@ edu.sh
 edu.sk
 edu.st
 edu.sv
+edu.tf
 edu.tj
 edu.tr
 edu.tt
@@ -502,6 +536,7 @@ etc.br
 eti.br
 eu.com
 eu.org
+eu.tf
 eu.tt
 eun.eg
 experts-comptables.fr
@@ -551,6 +586,8 @@ gb.com
 gb.net
 gc.ca
 gd.cn
+gda.pl
+gdansk.pl
 geek.nz
 gen.in
 gen.nz
@@ -591,9 +628,11 @@ gov.ae
 gov.af
 gov.ai
 gov.al
+gov.am
 gov.ar
 gov.au
 gov.az
+gov.ba
 gov.bb
 gov.bd
 gov.bf
@@ -627,6 +666,7 @@ gov.gn
 gov.gr
 gov.gu
 gov.hk
+gov.hu
 gov.ie
 gov.il
 gov.im
@@ -673,6 +713,7 @@ gov.ps
 gov.pt
 gov.py
 gov.qa
+gov.rs
 gov.ru
 gov.rw
 gov.sa
@@ -758,6 +799,7 @@ if.ua
 il.us
 imb.br
 in-addr.arpa
+in.rs
 in.th
 in.ua
 in.us
@@ -773,7 +815,9 @@ inf.br
 inf.cu
 info.au
 info.az
+info.bh
 info.co
+info.cu
 info.cy
 info.ec
 info.et
@@ -794,6 +838,7 @@ info.vn
 ing.pa
 ingatlan.hu
 inima.al
+int.am
 int.ar
 int.az
 int.bo
@@ -804,6 +849,7 @@ int.mw
 int.pt
 int.ru
 int.rw
+int.tf
 int.tj
 int.tt
 int.ve
@@ -850,6 +896,7 @@ kamchatka.ru
 kanagawa.jp
 kanazawa.jp
 karelia.ru
+katowice.pl
 kawasaki.jp
 kazan.ru
 kchr.ru
@@ -880,6 +927,7 @@ komvux.se
 konyvelo.hu
 kostroma.ru
 kr.ua
+krakow.pl
 krasnoyarsk.ru
 ks.ua
 ks.us
@@ -905,6 +953,7 @@ lg.ua
 lipetsk.ru
 lkd.co.im
 ln.cn
+lodz.pl
 ltd.co.im
 ltd.cy
 ltd.gg
@@ -912,6 +961,7 @@ ltd.gi
 ltd.je
 ltd.lk
 ltd.uk
+lublin.pl
 lugansk.ua
 lutsk.ua
 lviv.ua
@@ -949,8 +999,10 @@ miasta.pl
 mie.jp
 mil.ac
 mil.ae
+mil.am
 mil.ar
 mil.az
+mil.ba
 mil.bd
 mil.bo
 mil.br
@@ -1073,10 +1125,12 @@ net.af
 net.ag
 net.ai
 net.al
+net.am
 net.an
 net.ar
 net.au
 net.az
+net.ba
 net.bb
 net.bd
 net.bh
@@ -1125,6 +1179,7 @@ net.jo
 net.jp
 net.kg
 net.kh
+net.ki
 net.kw
 net.ky
 net.kz
@@ -1141,12 +1196,14 @@ net.ma
 net.mm
 net.mo
 net.mt
+net.mu
 net.mv
 net.mw
 net.mx
 net.my
 net.na
 net.nc
+net.nf
 net.ng
 net.ni
 net.np
@@ -1174,6 +1231,7 @@ net.sg
 net.sh
 net.st
 net.sy
+net.tf
 net.th
 net.tj
 net.tn
@@ -1183,6 +1241,8 @@ net.tw
 net.ua
 net.uk
 net.uy
+net.uz
+net.vc
 net.ve
 net.vi
 net.vn
@@ -1190,6 +1250,7 @@ net.vu
 net.ws
 net.ye
 net.za
+new.ke
 news.hu
 nf.ca
 ngo.lk
@@ -1244,6 +1305,7 @@ nt.ca
 nt.ro
 ntr.br
 nu.ca
+nui.hu
 nv.us
 nx.cn
 ny.us
@@ -1258,8 +1320,10 @@ oita.jp
 ok.us
 okayama.jp
 okinawa.jp
+olsztyn.pl
 omsk.ru
 on.ca
+opole.pl
 or.at
 or.cr
 or.id
@@ -1276,10 +1340,12 @@ org.ae
 org.ag
 org.ai
 org.al
+org.am
 org.an
 org.ar
 org.au
 org.az
+org.ba
 org.bb
 org.bd
 org.bh
@@ -1333,6 +1399,7 @@ org.jo
 org.jp
 org.kg
 org.kh
+org.ki
 org.kw
 org.ky
 org.kz
@@ -1353,6 +1420,7 @@ org.mm
 org.mn
 org.mo
 org.mt
+org.mu
 org.mv
 org.mw
 org.mx
@@ -1377,6 +1445,7 @@ org.pt
 org.py
 org.qa
 org.ro
+org.rs
 org.ru
 org.sa
 org.sb
@@ -1396,6 +1465,8 @@ org.tw
 org.ua
 org.uk
 org.uy
+org.uz
+org.vc
 org.ve
 org.vi
 org.vn
@@ -1426,6 +1497,7 @@ per.sg
 perm.ru
 perso.ht
 pharmacien.fr
+pl.tf
 pl.ua
 plc.co.im
 plc.ly
@@ -1438,6 +1510,7 @@ police.uk
 poltava.ua
 port.fr
 powiat.pl
+poznan.pl
 pp.az
 pp.ru
 pp.se
@@ -1495,7 +1568,9 @@ rnrt.tn
 rns.tn
 rnu.tn
 rovno.ua
+rs.ba
 ru.com
+ru.tf
 rubtsovsk.ru
 rv.ua
 ryazan.ru
@@ -1518,6 +1593,7 @@ sc.ug
 sc.us
 sch.ae
 sch.gg
+sch.id
 sch.ir
 sch.je
 sch.lk
@@ -1542,6 +1618,7 @@ sendai.jp
 seoul.kr
 sex.hu
 sex.pl
+sg.tf
 sh.cn
 shiga.jp
 shimane.jp
@@ -1555,6 +1632,7 @@ sklep.pl
 sld.do
 sld.pa
 slg.br
+slupsk.pl
 smolensk.ru
 sn.cn
 snz.ru
@@ -1577,6 +1655,7 @@ sumy.ua
 surgut.ru
 sx.cn
 syzran.ru
+szczecin.pl
 szex.hu
 szkola.pl
 t.se
@@ -1596,6 +1675,7 @@ ternopil.ua
 test.ru
 tirana.al
 tj.cn
+tld.am
 tlf.nr
 tm.cy
 tm.fr
@@ -1614,6 +1694,7 @@ tokushima.jp
 tokyo.jp
 tom.ru
 tomsk.ru
+torun.pl
 tottori.jp
 tourism.pl
 tourism.tn
@@ -1644,11 +1725,14 @@ uk.tt
 ulan-ude.ru
 ulsan.kr
 unam.na
+unbi.ba
 uniti.al
+unsa.ba
 upt.al
 uri.arpa
 urn.arpa
 us.com
+us.tf
 us.tt
 ut.us
 utazas.hu
@@ -1679,9 +1763,12 @@ w.se
 wa.au
 wa.us
 wakayama.jp
+warszawa.pl
+waw.pl
 weather.mobi
 web.co
 web.do
+web.id
 web.lk
 web.pk
 web.tj
@@ -1689,6 +1776,8 @@ web.tr
 web.ve
 web.za
 wi.us
+wroc.pl
+wroclaw.pl
 wv.us
 www.ro
 wy.us
@@ -1709,7 +1798,9 @@ yokohama.jp
 yuzhno-sakhalinsk.ru
 z.se
 za.com
+za.pl
 zaporizhzhe.ua
+zgora.pl
 zgrad.ru
 zhitomir.ua
 zj.cn

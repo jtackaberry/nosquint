@@ -1,46 +1,44 @@
-window.addEventListener("load", NoSquint.init, false); 
-window.addEventListener("unload", NoSquint.destroy, false); 
+// Global object for NoSquint.  'NoSquint' is the only name added to the global
+// namespace by this addon.
+NoSquint = {
+    id: 'NoSquint',
+    namespaces: [],
+    _initialized: false,
+    dialogs: {},            // dialogs namespace
 
-// Hook ZoomManager in order to override Firefox's internal per-site
-// zoom memory feature.
+    ns: function(fn) {
+        var scope = {
+            extend: function(o) {
+                for (var key in o)
+                    this[key] = o[key];
+                }
+        };
+        scope = fn.apply(scope) || scope;
+        NoSquint.namespaces.push(scope);
+        return scope;
+    },
 
-ZoomManager._nosquintPendingZoom = null;
-ZoomManager._nosquintOrigZoomGetter = ZoomManager.__lookupGetter__('zoom');
-ZoomManager._nosquintOrigZoomSetter = ZoomManager.__lookupSetter__('zoom');
+    init: function() {
+        if (NoSquint._initialized)
+            return;
+        NoSquint._initialized = true;
 
-ZoomManager.__defineSetter__('zoom', function(value) {
-    /* XXX: Horrid hack, makes baby Jesus cry.
-     *
-     * Problem: on location change and tab change, some internal FF mechanism
-     * sets zoom to some stored value (on a per site basis).  NoSquint
-     * must fully override this mechanism, as we implement our own approach.
-     *
-     * Solution: rather than update zoom on the current browser immediately,
-     * we queue it with a timer, and give the location/tab change handlers
-     * in nosquint.js a chance to abort the queued zoom via
-     * NoSquint.abortPendingZoomManager()
-     */
-    ZoomManager._nosquintPendingZoom = value;
-    if (NoSquint.zoomManagerTimeout == false) {
-        dump("[nosquint] EATING ZOOM REQUEST: "+ value + "\n");
-        NoSquint.zoomManagerTimeout = null;
-        return;
+        for (let i = 0; i < NoSquint.namespaces.length; i++) {
+            var scope = NoSquint.namespaces[i];
+            if (scope.init !== undefined)
+                scope.init();
+        }
+    },
+
+    destroy: function() {
+        // Invoke destroy functions in all registered namespaces
+        for (let i = 0; i < NoSquint.namespaces.length; i++) {
+            var scope = NoSquint.namespaces[i];
+            if (scope.destroy !== undefined)
+                scope.destroy();
+        }
     }
-    NoSquint.zoomManagerTimeout = setTimeout(function() { 
-        dump("[nosquint] setting zoom through ZoomManager: " + value + "\n");
-        ZoomManager._nosquintOrigZoomSetter(value);
-        NoSquint.zoomManagerTimeout = null;
-        ZoomManager._nosquintPendingZoom = null;
-    }, 0);
-});
+};
 
-
-ZoomManager.__defineGetter__('zoom', function() {
-    if (ZoomManager._nosquintPendingZoom != null)
-        return ZoomManager._nosquintPendingZoom;
-    return ZoomManager._nosquintOrigZoomGetter();
-});
-
-ZoomManager.enlarge = NoSquint.cmdEnlargePrimary;
-ZoomManager.reduce = NoSquint.cmdReducePrimary;
-ZoomManager.reset = NoSquint.cmdReset;
+window.addEventListener("load", NoSquint.init, false); 
+window.addEventListener("unload", NoSquint.destroy, false);

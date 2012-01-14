@@ -52,8 +52,77 @@
 </style>
 
 <body>
-<h2>Options Tab</h2>
-<h3>General Options</h3>
+<h2 id='general'>General Tab</h2>
+
+<p>To NoSquint, a site is a web location where all pages have the same zoom
+level and color settings, and the site name is derived from the page's URL.</p>
+
+<p>In most cases, the site is the domain.  For example, if the current page is
+<code>www2.ibm.com/index.php</code>, NoSquint will consider the site name to be
+<code>ibm.com</code>.  NoSquint will also take into account common country-specific
+second-level domains.  For example, if you're visiting
+<code>www.bbc.co.uk</code>, NoSquint will consider the site name to be
+<code>bbc.co.uk</code>.</p>
+
+<p>The default behaviour should work almost all the time.  When it doesn't, you
+can control how NoSquint determines site names in the 
+<a href='#exceptions'>Exceptions Tab</a>.</p>
+
+<h3>Per-site settings (color and zoom)</h3>
+<ul>
+    <li>
+        <b>Remember per-site settings between Firefox restarts</b>
+            <p>With this option selected, NoSquint will remember any changes
+            you make to the zoom levels and color choices for a given site, and
+            the changes are stored on disk so they can be applied even if you
+            restart Firefox.</p>
+            <p>Both full page zoom and text zoom levels are remembered
+            independently.  Next time you visit that site, NoSquint will use
+            the zoom and colors previously used on that site.</p>
+    </li>
+    <li>
+        <b>Forget settings for sites not visited in the last ...</b>
+            <p>With the "Remember per-site settings between Firefox restarts"
+            option enabled, NoSquint keeps track of all zoom level and color
+            changes for sites, even sites you only visit once.  This option is
+            house cleaning: if you haven't visited a site (for which you've set
+            a non-default zoom or color setting) for the specified number of
+            months, NoSquint will forget the setting.</p>
+    </li>
+    <li>
+        <b>Erase NoSquint site history when Firefox clears private data</b>
+            <p>When you change the default zoom levels or colors for a given
+            site, NoSquint remembers that change, which means it must keep a 
+            record of those sites.  From a privacy perspective, this is similar
+            to your browsing history.  If this option is selected, when Firefox
+            clears your private data (via Tools | Clear Private Data for Firefox
+            3.0, and Tools | Clear Recent History for Firefox 3.5), it will
+            also purge all site-specific data associated with NoSquint.</p>
+            <p>Note that user-added <a href='#exceptions'>exceptions</a> are
+            not cleared.</p>
+    </li>
+    <li>
+        <b>Forget all per-site settings when Firefox closes</b>
+            <p>Per-site settings will be retained only for the current Firefox
+            session.  They are never written to disk, and will therefore not
+            be remembered if you restart Firefox.</p>
+            <p>An alternative would be to use Firefox's Private Browsing mode
+            (Firefox 3.5 and later), which NoSquint supports.  When Private
+            Browsing is activated, even if "Remember per-site settings between
+            Firefox restarts" is selected instead of this option, NoSquint will
+            never store any per-site settings to disk which have changed while
+            in that mode.</p>
+    </li>
+</ul>
+
+<h2 id='zooming'>Zooming Tab</h2>
+
+<p>The options in this tab let you control the default zooming behavior as they
+apply to all sites.  You can override the zoom levels for individual sites using
+the Site Settings, which can be managed by left-clicking on NoSquint's status bar
+icon, or selecting NoSquint Site Settings from the page's context menu.</p>
+
+<h3>Default Zoom Options</h3>
 <ul>
     <li>
         <b>Primary zoom method</b>
@@ -67,17 +136,30 @@
             secondary zoom method.  For example, if the primary zoom method is
             set to Full Page Zoom, and ctrl-shift-plus is pressed, only text size will
             be increased.</p>
-            
-
-        <b>Default primary zoom level</b>
-            <p>This is the zoom level of the primary zoom method as applied to
-            all pages by default.  A value of 100% is the standard Firefox zoom
-            level without NoSquint.  With NoSquint, you can override this value
-            to be larger or smaller.</p>
-
-            <p>Modifying the zoom when visiting a web page will override this
-            value for that site.</p>
     </li>
+            
+    <li>
+        <b>Default full page zoom level</b>
+            <p>This is the full page zoom level (affecting both images and
+            text) which will be applied to all pages by default.  A value of
+            100% is the standard Firefox zoom level without NoSquint.  With
+            NoSquint, you can override this value to be larger or smaller.</p>
+
+            <p>Modifying the full page zoom level when visiting a web page will
+            override this value for that site.</p>
+    </li>
+
+    <li>
+        <b>Default text-only zoom level</b>
+            <p>This is the text zoom level (affecting <i>only</i> text) which
+            will be applied to all pages by default.  A value of 100% is the
+            standard Firefox zoom level without NoSquint.  With NoSquint, you
+            can override this value to be larger or smaller.</p>
+
+            <p>Modifying the text zoom level when visiting a web page will
+            override this value for that site.</p>
+    </li>
+
     <li>
         <b>Zoom increment</b>
             <p>You can change the zoom level for a page from the View menu, by
@@ -102,61 +184,63 @@
     </li>
 </ul>
 
-<h3>Site Options</h3>
+<h2 id='colors'>Colors Tab</h2>
+<p>Sometimes website creators choose to use rather questionable color choices
+which can significantly hinder readability.  NoSquint lets you override the
+standard text colors for <i>all</i> sites here.  Or (probably more usefully),
+you can modify per-site colors via the Site Settings, which can be managed by
+left-clicking on NoSquint's status bar icon, or selecting NoSquint Site
+Settings from the page's context menu.</p>
 
-<p>To NoSquint, a site is a web location where all pages under that location
-have the same zoom level, and the site name is derived from the page's
-URL.</p>
-
-<p>In most cases, the site is the domain.  For example, if the current page is
-<code>www2.ibm.com/index.php</code>, NoSquint will consider the site name to be
-<code>ibm.com</code>.  NoSquint will also take into account common
-second-level domains.  For example, if you're visiting
-<code>www.bbc.co.uk</code>, NoSquint will consider the site name to be
-<code>bbc.co.uk</code>.</p>
-
-<p>The default behaviour should work almost all the time.  When it doesn't, you
-can control how NoSquint determines site names in the Exceptions Tab.</p>
-
+<h3>Text and Background</h3>
 <ul>
     <li>
-        <b>Remember zoom level per site</b>
-            <p>With this option selected, NoSquint will remember any changes
-            you make to the zoom levels for a given site.  Both full page zoom
-            and text zoom levels are remembered independently.  Next time you
-            visit that site, NoSquint will change the zoom to the levels
-            previously used on that site.</p>
+        <b>Text</b>
+            <p>Overrides the foreground color for all text on the page.</p>
     </li>
     <li>
-        <b>Forget zoom settings for sites not visited in the last ...</b>
-            <p>With the "remember zoom levels per site" option enabled,
-            NoSquint keeps track of all zoom level changes for sites, even
-            sites you only visit once.  This option is house cleaning: if you
-            haven't visited a site (for which you've set a non-default zoom
-            level) for the specified number of months, NoSquint will forget the
-            setting.</p>
+        <b>Background</b>
+            <p>Overrides the background color for the page.</p>
     </li>
     <li>
-        <b>Use the default zoom level for all sites</b>
-            <p>One of NoSquint's features is the ability to remember custom
-            zoom levels for individual sites.  If you're not interested this
-            and want to use the same level for all sites, or you just don't
-            want NoSquint to remember any manual changes, select this
-            option.</p>
+        <b>Disable background images</b>
+            <p>Some sites may overlay text on background images, rendering the
+            user-selected background color (above) ineffective.  You can disable
+            those images by selecting this options.</p>
     </li>
 </ul>
 
-<h2>Exceptions Tab</h2>
+<h3>Link Colors</h3>
+<ul>
+    <li>
+        <b>Unvisited</b>
+            <p>The foreground text color to use for all links that have not been visited before.</p>
+    </li>
+    <li>
+        <b>Visited</b>
+            <p>The foreground text color to use for all links that <i>have</i> been visited before.</p>
+    </li>
+    <li>
+        <b>Always underline links</b>
+            <p>Some websites make it difficult to tell the difference between links and regular text.
+            Selecting this option will force hyperlinks to always be underlined.</p>
+    </li>
+</ul>
+
+
+<h2 id='exceptions'>Exceptions Tab</h2>
 
 <p>Because not all web sites are structured the same, sometimes the default
 logic NoSquint uses to determine the site name doesn't work the way you want it
-to.  By way of exceptions, you can control how NoSquint determines what
-constitutes a separate site.</p>
+to.  Using exceptions, you can control how NoSquint determines what constitutes
+a separate site.</p>
 
 <h3>Use Cases</h3>
 <p>Exceptions are powerful and expressive, and unfortunately can be confusing.
-Before going into a detailed explanation, let's first examine some common
-use-cases.  Hopefully one of these examples applies to your case.</p>
+They are specified using a simple custom grammar, <i>not</i> regular
+expressions.  Before going into a detailed explanation, let's first examine
+some common use-cases.  Hopefully one of these examples applies to your
+case.</p>
 
 <ol>
     <li>
@@ -221,7 +305,7 @@ use-cases.  Hopefully one of these examples applies to your case.</p>
         <code>example.com/[*]/apps/*</code>
     </li>
     <li>
-        <b>Problem:</b> same scenario the previous one, but sometimes the
+        <b>Problem:</b> same scenario as the previous one, but sometimes the
         server isn't in the URL, so <code>example.com/apps/app1</code> is
         the same site as <code>example.com/server1/apps/app1</code>.<br/>
 
@@ -255,8 +339,9 @@ computed by NoSquint based on the current page's URL and the user-defined list
 of exceptions.  For instance, both <code>foo.example.com</code> and
 <code>myapp.*.example.com</code> could be site names, depending on the
 exceptions defined.  NoSquint looks up zoom levels based on the site name.  The
-site name, as determined by NoSquint, is by default displayed in the status bar
-beside the current zoom level.</p>
+site name, as determined by NoSquint, can be viewed in the tooltip by hovering
+over the magnifying glass in the status bar, or by opening the Site Settings
+dialog by left clicking the magnifying glass in the status bar.</p>
 
 <p>When a wildcard is enclosed in square brackets (i.e. <code>[*]</code> or
 <code>[**]</code>), the literal wildcard (<code>*</code> or <code>**</code>)
@@ -278,10 +363,24 @@ For example, for <code>www.google.com</code>, a single <code>*</code> matches
 <code>google.com</code>; for <code>www.bbc.co.uk</code> it matches
 <code>bbc.co.uk</code>.</p>
 
-<p>When multiple exceptions match a page's URL, NoSquint will use the exception
-that matches the most non-wildcard characters in the host name.  If there are
-still multiple exceptions in that narrowed list, the exception that matches the
-most non-wildcard characters in the path is then chosen.  If still there are
-multiple exceptions, the first one that matched is chosen.</p>
+<p>Hostname parts can optionally contain a port number, which is delimited from
+the hostname with a <code>:</code> (colon).  For example, <code>*:8080</code> will
+cause port 8080 for all domains to be treated separately, so that
+<code>www.example.com</code> is considered a different site than
+<code>www.example.com:8080</code> (but, assuming no other exceptions than
+this, <code>www.example.com:8001</code> is still considered the same site
+as <code>www.example.com</code> or <code>www.example.com:4242</code>).</p>
+
+<p>Any exception whose host part is the null string &ndash; in other words, the
+exception begins with a <code>/</code> (front slash) &ndash; is applied only to
+<code>file://</code> URLs.  So the exception <code>/home/*</code> for Linux or
+<code>/C:/Users/*</code> for Windows Vista causes all home directories to be
+treated distinctly from one another.</p>
+
+<p>When multiple exception patterns match a page's URL, NoSquint will use the
+exception that matches the most non-wildcard characters in the host name.  If
+there are still multiple exceptions in that narrowed list, the exception that
+matches the most non-wildcard characters in the path is then chosen.  If still
+there are multiple exceptions, the first one that matched is chosen.</p>
 </body>
 </html>
