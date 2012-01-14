@@ -5,7 +5,7 @@
   <RDF:Description RDF:about="urn:mozilla:install-manifest"
                    em:id="nosquint@urandom.ca"
                    em:name="No Squint"
-                   em:version="1.0.0"
+                   em:version="1.0.1"
                    em:description="Zooms text by user-configurable percentage"
                    em:creator="Jason Tackaberry"
                    em:homepageURL="http://urandom.ca/nosquint/"

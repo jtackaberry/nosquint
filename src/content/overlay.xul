@@ -17,17 +17,13 @@
         </toolbaritem>
     </toolbarpalette>
 
-    <keyset id="mainKeyset">
-        <key id="nosquint-menu-key" key="0" modifiers="alt" command="cmd_noSquintPrefs" />
-    </keyset>
-
     <commandset id="mainCommandSet">
         <command id="cmd_noSquintPrefs" oncommand="NoSquint.openPrefsDialog()" />
     </commandset>
 
     <menupopup id="menu_ToolsPopup">
         <menuitem id="nosquint-menuitem" label="&nosquint.label;" oncommand="NoSquint.openPrefsDialog()"
-                  key="nosquint-menu-key" accesskey="&nosquint.accesskey;" insertafter="devToolsSeparator" />
+                  insertafter="devToolsSeparator" />
     </menupopup>
 
     <statusbar id="status-bar">
