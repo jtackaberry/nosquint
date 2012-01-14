@@ -12,6 +12,7 @@ NoSquint.interfaces = NoSquint.ns(function() { with (NoSquint) {
      */
     var stateFlag = is30() ? Components.interfaces.nsIWebProgressListener.STATE_STOP
                            : Components.interfaces.nsIWebProgressListener.STATE_TRANSFERRING;
+    //var stateFlag = Components.interfaces.nsIWebProgressListener.STATE_STOP;
 
     /* Listener used to receive notifications when a new URI is about to be loaded.
      * TODO: when support for Firefox 3.0 is dropped, use:
@@ -77,8 +78,8 @@ NoSquint.interfaces = NoSquint.ns(function() { with (NoSquint) {
         },
 
         onStateChange: function(progress, request, state, astatus) {
-            debug("LISTENER: request=" + request + ", state=" + state + ", status=" + 
-                  astatus + ", type=" + this.browser.docShell.document.contentType);
+            //debug("LISTENER: request=" + request + ", state=" + state + ", status=" + 
+            //      astatus + ", type=" + this.browser.docShell.document.contentType);
 
             /* Check the current content type against the content type we initially got.
              * This changes in the case when there's an error page (e.g. dns failure),
