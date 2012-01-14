@@ -306,7 +306,7 @@ var NoSquint = {
             return;
         var browser = gBrowser.selectedBrowser;
         var text = full = false;
-        var increment = NoSquint.zoomIncrement * (event.detail < 0 ? -1 : 1);
+        var increment = NoSquint.zoomIncrement * (event.detail < 0 ? 1 : -1);
         if (NoSquint.fullZoomPrimary && !event.shiftKey || !NoSquint.fullZoomPrimary && event.shiftKey)
             full = (browser.markupDocumentViewer.fullZoom * 100) + increment;
         else
