@@ -21,19 +21,35 @@ function debug(msg) {
 //    dump("[nosquint] " + msg + "\n");
 }
 
-// TODO: benchmark this function, it is called a lot.
+/* This function is called a lot, so we take some care to optimize for the
+ * common cases.
+ */
 function is_chrome(browser) {
     var document = browser.docShell.document;
-    debug("IS CHROME: " + document.URL + " (" + browser.currentURI.spec + ")  -- type:" + document.contentType);
-    if (document.URL.replace(/#.*$/, '') != browser.currentURI.spec.replace(/#.*$/, ''))
+    
+    if (document.URL == undefined)
+        return true;
+
+    /* In the common case, document.URL == browser.currentURI.spec, so we test
+     * this simple equality first before resorting to the probably unnecessary
+     * regexp call.
+     */
+    if (document.URL !=  browser.currentURI.spec &&
+        document.URL.replace(/#.*$/, '') != browser.currentURI.spec.replace(/#.*$/, ''))
         /* Kludge: doc.URL doesn't match browser currentURI during host lookup failure,
          * SSL cert errors, or other scenarios that result in an internal page being
          * displayed that we consider chrome.
          */
         return true;
-    return document.URL == undefined || 
-           document.URL.search(/^about:/) != -1 ||
-           document.contentType.search(/^text\/(html|plain|css|xml|javascript)|^application\/(xhtml)/) != 0;
+
+    // A couple other common cases.
+    if (document.contentType == 'text/html' || document.contentType == 'application/xhtml+xml')
+        return false;
+    if (document.URL == undefined || document.URL.substr(0, 6) == 'about:')
+        return true;
+
+    // Less common cases that we'll cover with the more expensive regexp.
+    return document.contentType.search(/^text\/(plain|css|xml|javascript)/) != 0;
 }
 
 function is_image(browser) {

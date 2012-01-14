@@ -20,7 +20,7 @@ var NoSquintPrefs = {
             NoSquintPrefs.prefs = prefService.getBranch("extensions.nosquint.")
         }
 
-        // Options tab
+        // General tab
         var forget_cb = doc.getElementById("siteForget");
         var months = NoSquintPrefs.prefs.getIntPref("forgetMonths");
         forget_cb.checked = (months != 0);

@@ -1,5 +1,5 @@
 <!ENTITY ns.pref.title "NoSquint Global Settings">
-<!ENTITY ns.pref.tab.options.label "Options">
+<!ENTITY ns.pref.tab.general.label "General">
 <!ENTITY ns.pref.tab.zooming.label "Zooming">
 <!ENTITY ns.pref.tab.colors.label "Colors">
 <!ENTITY ns.pref.tab.exceptions.label "Exceptions">

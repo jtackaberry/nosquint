@@ -22,15 +22,15 @@
 
     <tabbox flex="1">
         <tabs>
-            <tab label="&ns.pref.tab.options.label;" />
+            <tab label="&ns.pref.tab.general.label;" />
             <tab label="&ns.pref.tab.zooming.label;" />
             <tab label="&ns.pref.tab.colors.label;" />
             <tab label="&ns.pref.tab.exceptions.label;" />
         </tabs>
 
         <tabpanels flex="1">
-            <!-- Options Tab -->
-            <tabpanel id="optionstab" flex="1">
+            <!-- General Tab -->
+            <tabpanel id="generaltab" flex="1">
                 <vbox flex="1">
                     <groupbox id="persistence">
                         <caption label="&ns.pref.persistence.caption;" />

@@ -50,16 +50,15 @@ var NoSquint = {
         var t0 = new Date().getTime();
 
         /* The multi-level TLDs list is an object shared between all windows.
-         * First iterate over all existing windows to see if we can find it;
-         * this prevents us from parsing the ~2000 line file each time a window
-         * is opened.  If not, read it from the two-level-tlds file.
+         * First see if it has already been attached to some window; this
+         * prevents us from parsing the ~2000 line file each time a window is
+         * opened.  If not, read it from the two-level-tlds file.
          */
         NoSquint.TLDs = window_get_global('tlds');
         if (NoSquint.TLDs == null) {
             // TLDs list not found in any existing window.  Load the stored list,
             // which is borrowed from http://www.surbl.org/two-level-tlds
             lines = readLines('chrome://nosquint/content/two-level-tlds');
-            //window._noSquintTLDs = NoSquint.TLDs = {};
             NoSquint.TLDs = {};
             for (var i in lines)
                 NoSquint.TLDs[lines[i]] = true;
@@ -107,7 +106,6 @@ var NoSquint = {
         NoSquint.styleAll();
         var t1 = new Date().getTime();
         debug("initialization took " + (t1-t0) + " ms");
-        //NoSquint.openGlobalPrefsDialog();
     },
 
     destroy: function() {
@@ -603,10 +601,14 @@ var NoSquint = {
      * and zoom levels.
      */
     updateStatus: function() {
+        var browser = gBrowser.selectedBrowser;
+        // Disable/enable context menu item.
+        document.getElementById('nosquint-menu-settings').disabled = browser._noSquintSite == null;
+
         if (NoSquint.hideStatus)
             // Pref indicates we're hiding status panel, no sense in updating.
             return;
-        var browser = gBrowser.selectedBrowser;
+
         var text = Math.round(browser.markupDocumentViewer.textZoom * 100);
         var full = Math.round(browser.markupDocumentViewer.fullZoom * 100);
         var [text_default, full_default] = NoSquint.getZoomDefaults();
@@ -848,8 +850,8 @@ var NoSquint = {
         var is_wider = img.naturalWidth/img.naturalHeight > doc.body.clientWidth/doc.body.clientHeight;
 
         var cursor = (!fit && !is_bigger) || (fit && is_bigger) ? "-moz-zoom-in" : "-moz-zoom-out";
-        var css = "* { cursor: " + cursor + " !important; }";
-        css += "img { cursor: " + cursor + " !important;";
+        //var css = "* { cursor: " + cursor + " !important; }";
+        var css = "img { cursor: " + cursor + " !important;";
         css += "width: " + (fit && is_wider? "100%" : "auto") + " !important;";
         css += "height: " + (fit && !is_wider ? "100%" : "auto") + " !important;}";
         debug("Fitting: " + fit + ", css: " + css);
@@ -885,7 +887,8 @@ var NoSquint = {
             if (doc.body.firstChild) {
                 browser._noSquintFit = false;
                 NoSquint.adjustImage(null, browser, NoSquint.zoomImages ? undefined : -1);
-                doc.addEventListener("click", function(event) { 
+                var img = doc.body.firstChild;
+                img.addEventListener("click", function(event) { 
                     if (event.button == 0)
                         return NoSquint.adjustImage(event, browser);
                 }, true);
@@ -1412,16 +1415,9 @@ ProgressListener.prototype.QueryInterface = function(aIID) {
 }
 
 ProgressListener.prototype.onLocationChange = function(progress, request, uri) {
-    /* This is called when it's confirmed a URL is loading (including reload).
-     * We set a flag here to update the zoom levels on the next state change
-     * rather than doing it immediately, because sometime between now and then
-     * firefox's internal full zoom gets reset, and we want to update full
-     * zoom after that happens (to override it, in effect).
-     */
+    // This is called when it's confirmed a URL is loading (including reload).
     debug("Location change: " + uri.spec);
-    //alert("Location change: " + uri.spec + ' -- doc uri:' + this.browser.docShell.document.URL);
     this.style_applied = false;
-    this.zoom_override = false;
     this.browser._noSquintStyles = [];
     this.content_type = this.browser.docShell.document.contentType;
     NoSquint.locationChanged(this.browser, this.browser.currentURI);
