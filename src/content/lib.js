@@ -47,9 +47,9 @@
                          .getService(Components.interfaces.nsIStringBundleService)
                          .createBundle('chrome://nosquint/locale/' + name + '.properties');
         var strings = {}
-        var enum = bundle.getSimpleEnumeration();
-        while (enum.hasMoreElements()) {
-            var str = enum.getNext().QueryInterface(Components.interfaces.nsIPropertyElement);
+        var e = bundle.getSimpleEnumeration();
+        while (e.hasMoreElements()) {
+            var str = e.getNext().QueryInterface(Components.interfaces.nsIPropertyElement);
             strings[str.key] = str.value;
         }
         return strings;

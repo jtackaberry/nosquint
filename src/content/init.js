@@ -1,6 +1,6 @@
 // Global object for NoSquint.  'NoSquint' is the only name added to the global
 // namespace by this addon.
-NoSquint = {
+var NoSquint = {
     id: 'NoSquint',
     namespaces: [],
     _initialized: false,

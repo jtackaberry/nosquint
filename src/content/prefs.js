@@ -425,7 +425,7 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
             if (!origexc)
                 continue;
             // Escape metacharacters except *
-            exc = origexc.replace(/([^\w:*\[\]])/g, '\\$1');
+            var exc = origexc.replace(/([^\w:*\[\]])/g, '\\$1');
             // Split into host and path parts, and regexpify separately.
             var [_, exc_host, exc_path] = exc.match(/([^\/]*)(\\\/.*|$)/);
             var [len_host, re_host, sub_host] = regexpify(exc_host, '[^.:/]+', '.*');
