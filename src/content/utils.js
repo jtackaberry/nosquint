@@ -67,25 +67,6 @@ function foreach_window(callback) {
             break;
 }
 
-function window_get_global(name) {
-    var value = null;
-    foreach_window(function(win) {
-        if (win._noSquintGlobals != undefined && name in win._noSquintGlobals) {
-            value = win._noSquintGlobals[name];
-            return false;
-        }
-    });
-    return value;
-}
-
-function window_set_global(name, value) {
-    foreach_window(function(win) {
-        if (win._noSquintGlobals == undefined)
-            win._noSquintGlobals = {};
-        win._noSquintGlobals[name] = value;
-    });
-}
-
 function popup(type, title, text, bundle) {
     if (!bundle)
         bundle = document.getElementById("nosquint-overlay-bundle");
