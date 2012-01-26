@@ -239,8 +239,8 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
             for (let [i, child] in enumerate(popup.childNodes)) {
                 if (child.id == 'toggle_zoom')
                     child.hidden = true;
-                if (child.nodeName != 'menuitem' || (child.command != 'cmd_fullZoomEnlarge' && 
-                    child.command != 'cmd_fullZoomReduce'))
+                if (child.nodeName != 'menuitem' || child.command === undefined ||
+                    (child.command != 'cmd_fullZoomEnlarge' && child.command != 'cmd_fullZoomReduce'))
                     continue;
 
                 var icon = document.defaultView.getComputedStyle(child, null).getPropertyValue('list-style-image');
