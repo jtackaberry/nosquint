@@ -832,13 +832,17 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
                 }
             });
 
-            /* XXX: if we change this to > rather than !=, we need to be smarter than
-             * a simple lexographic comparison, because '2.1b1' > '2.1' which isn't
-             * expected behaviour.
-             */
-            if (addon.version != NSQ.prefs.lastVersion) {
-                if (!found)
-                    NSQ.browser.gBrowser.selectedTab = gBrowser.addTab('about:nosquint');
+             if (addon.version != NSQ.prefs.lastVersion) {
+                /* Compare only the first two components of the version string.
+                 * We don't open about:nosquint on bugfix releases to reduce
+                 * the spamminess of upgrades, which was a complaint by a few
+                 * users.
+                 */
+                cur_parts = addon.version.split('.');
+                last_parts = (NSQ.prefs.lastVersion || '0.0').split('.');
+                if (cur_parts[0] > last_parts[0] || (cur_parts[0] == last_parts[0] && cur_parts[1] > last_parts[1]))
+                    if (!found)
+                        NSQ.browser.gBrowser.selectedTab = gBrowser.addTab('about:nosquint');
                 branchNS.setCharPref('version', addon.version);
                 NoSquint.prefs.save();
             }
