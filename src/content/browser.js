@@ -64,6 +64,16 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
         if (NSQ.storage.dialogs.site)
             NSQ.storage.dialogs.site.die();
 
+        /* When the window is closed, the Tabclose event doesn't fire for each
+         * browser tab automatically, so we must clean up explicitly.
+         *
+         * This fixes issue #1 which reports zombie compartments.
+         */
+        for (let browser in iter(gBrowser.browsers)) {
+            browser.removeProgressListener(browser.getUserData('nosquint').listener);
+            browser.setUserData('nosquint', null, null);
+        }
+
         gBrowser.tabContainer.removeEventListener('TabOpen', this.handleTabOpen, false);
         gBrowser.tabContainer.removeEventListener('TabSelect', this.handleTabSelect, false);
         gBrowser.tabContainer.removeEventListener('TabClose', this.handleTabClose, false);
