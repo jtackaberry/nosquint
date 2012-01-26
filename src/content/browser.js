@@ -238,7 +238,7 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
         if (!$('nosquint-view-menu-settings')) {
             for (let [i, child] in enumerate(popup.childNodes)) {
                 if (child.id == 'toggle_zoom')
-                    child.style.display = 'none';
+                    child.hidden = true;
                 if (child.nodeName != 'menuitem' || (child.command != 'cmd_fullZoomEnlarge' && 
                     child.command != 'cmd_fullZoomReduce'))
                     continue;
