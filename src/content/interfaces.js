@@ -24,6 +24,7 @@ NoSquint.interfaces = NoSquint.ns(function() { with (NoSquint) {
     this.ProgressListener = function(browser) {
         this.id = 'NoSquint.interfaces.ProgressListener';
         this.browser = browser;
+        this.contentType = null;
     }
 
     this.ProgressListener.prototype = {
