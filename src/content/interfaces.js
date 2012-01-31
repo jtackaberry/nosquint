@@ -191,16 +191,10 @@ NoSquint.interfaces = NoSquint.ns(function() { with (NoSquint) {
         _os: null,  
         _inPrivateBrowsing: false, // whether we are in private browsing mode  
         watcher: {}, // the watcher object  
-        _hooked: false,
        
         init: function () {  
-            this._inited = true;  
             this._os = Components.classes["@mozilla.org/observer-service;1"]  
                                  .getService(Components.interfaces.nsIObserverService);  
-            this._hook();
-        },
-
-        _hook: function() {
             this._os.addObserver(this, "private-browsing", false);  
             this._os.addObserver(this, "quit-application-granted", false);  
             if (is3x())
@@ -218,13 +212,15 @@ NoSquint.interfaces = NoSquint.ns(function() { with (NoSquint) {
                 // ignore exceptions in older versions of Firefox  
             }
 
-            this._hooked = true;
         },
 
-        _unhook: function() {
+        unhook: function() {
             this._os.removeObserver(this, "quit-application-granted");  
             this._os.removeObserver(this, "private-browsing");  
-            this._hooked = false;
+            if (is3x())
+                this._os.removeObserver(this, "em-action-requested");
+            else
+                AddonManager.removeAddonListener(this);
         },
 
         onDisabling: function(addon, needsRestart) {
@@ -269,7 +265,6 @@ NoSquint.interfaces = NoSquint.ns(function() { with (NoSquint) {
 
                 case "quit-application-granted":
                     NSQ.storage.quitting = true;
-                    this._unhook();
                     break;
 
                 // This is for ff 3.x; just dispatch to the 4.x handlers.

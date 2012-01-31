@@ -64,15 +64,15 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
         if (NSQ.storage.dialogs.site)
             NSQ.storage.dialogs.site.die();
 
-        /* When the window is closed, the Tabclose event doesn't fire for each
+        /* When the window is closed, the TabClose event doesn't fire for each
          * browser tab automatically, so we must clean up explicitly.
          *
          * This fixes issue #1 which reports zombie compartments.
          */
-        for (let browser in iter(gBrowser.browsers)) {
-            browser.removeProgressListener(browser.getUserData('nosquint').listener);
-            browser.setUserData('nosquint', null, null);
-        }
+        for (let browser in iter(gBrowser.browsers))
+            this.detach(browser);
+
+        this.observer.unhook();
 
         gBrowser.tabContainer.removeEventListener('TabOpen', this.handleTabOpen, false);
         gBrowser.tabContainer.removeEventListener('TabSelect', this.handleTabSelect, false);
@@ -220,9 +220,7 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
     };
 
     this.handleTabClose = function(event) {
-        var browser = event.target.linkedBrowser;
-        browser.removeProgressListener(browser.getUserData('nosquint').listener);
-        browser.setUserData('nosquint', null, null);
+        NSQ.browser.detach(event.target.linkedBrowser);
     };
 
 
@@ -420,20 +418,27 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
 
         var userData = {
             listener: listener,
-            stylers: []
+            stylers: [],
+            handleDOMFrameContentLoaded: function(event) {
+                if (!event.target.contentWindow)
+                    return;
+                var styler = NSQ.browser.getDocumentStyler(browser, event.target.contentWindow.document);
+                styler();
+                browser.getUserData('nosquint').stylers.push(styler);
+            }
         };
         browser.setUserData('nosquint', userData, null);
-
-        browser.addEventListener('DOMFrameContentLoaded', function(event) {
-            if (!event.target.contentWindow)
-                return;
-            var styler = NSQ.browser.getDocumentStyler(browser, event.target.contentWindow.document);
-            styler();
-            browser.getUserData('nosquint').stylers.push(styler);
-        }, true);
-
+        browser.addEventListener('DOMFrameContentLoaded', userData.handleDOMFrameContentLoaded, true);
     };
 
+    /* Undoes an attach(); called from TabClose event and destroy()
+     */
+    this.detach = function(browser) {
+        var userData = browser.getUserData('nosquint');
+        browser.removeProgressListener(userData.listener);
+        browser.removeEventListener('DOMFrameContentLoaded', userData.handleDOMFrameContentLoaded, true);
+        browser.setUserData('nosquint', null, null);
+    };
 
     /* Zooms text and/or full zoom to the specified level.  If text or full is
      * null, the default for browser is used.  If it is false, it is
