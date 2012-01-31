@@ -184,10 +184,11 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
         if (!event.ctrlKey)
             return;
         if (NSQ.prefs.wheelZoomEnabled) {
-            var browser = gBrowser.selectedBrowser;
-            var text = full = false;
-            var increment = NSQ.prefs.zoomIncrement * (event.detail < 0 ? 1 : -1);
-            var img = isImage(browser);
+            var browser, text, full, increment, img;
+            browser = gBrowser.selectedBrowser;
+            text = full = false;
+            increment = NSQ.prefs.zoomIncrement * (event.detail < 0 ? 1 : -1);
+            img = isImage(browser);
                 
             if (NSQ.prefs.wheelZoomInvert)
                 increment *= -1;
