@@ -154,7 +154,7 @@ NoSquint.interfaces = NoSquint.ns(function() { with (NoSquint) {
                 var listener = this;
                 setTimeout(function() {
                     try {
-                        browser.addProgressListener(listener, CI.nsIWebProgress.NOTIFY_STATE_DOCUMENT);
+                        browser.addProgressListener(listener);
                     } catch (err) {
                         // Assume ProgressListener was already attached after all, so
                         // we don't need to do anything.
