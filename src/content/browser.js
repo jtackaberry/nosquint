@@ -561,8 +561,18 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
             stylers.push(this.getDocumentStyler(browser, doc));
 
         debug("style(): num stylers=" + stylers.length);
-        for (let styler in iter(stylers))
-            styler(style);
+        for (let i = stylers.length - 1; i >= 0; i--) {
+            // A styler may raise if it applies to a dead object (which
+            // happens if e.g. a DOM frame is dynamically removed).  If it
+            // fails, remove it from the list of active stylers for this
+            // browser.
+            try {
+                stylers[i](style);
+            } catch (e) {
+                debug("Failed to apply style: " + e);
+                stylers.splice(i, 1);
+            }
+        }
 
         if (browser == gBrowser.selectedBrowser)
             this.queueUpdateStatus();
