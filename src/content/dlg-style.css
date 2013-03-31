@@ -17,11 +17,11 @@ button[dlgtype="extra1"] {
 #warning-box {
     border: 1px solid #e0cd64;
     background-color: #fffac4;
-    padding: 3px 15px 3px 15px;
+    padding: 10px 15px 10px 15px;
     margin: 0.5em 2em;
     vertical-align: middle;
     font-weight: bold;
-    -moz-border-radius: 20px;
+    border-radius: 20px;
 }
 
 #warning-box div {
@@ -31,5 +31,6 @@ button[dlgtype="extra1"] {
 }
 
 #warning-box image {
+    width: 32px;
 }
 
