@@ -57,8 +57,10 @@ NoSquint.cmd = NoSquint.ns(function() { with (NoSquint) {
 
     this.enlargeTextZoom = function() {
         var browser = getBrowser().mCurrentBrowser;
-        if (isImage(browser))
-            return NSQ.cmd.enlargeFullZoom();
+        if (isImage(browser)) {
+            NSQ.cmd.enlargeFullZoom();
+            return;
+        }
         var mdv = browser.markupDocumentViewer;
         mdv.textZoom = Math.round(mdv.textZoom * 100.0 + NSQ.prefs.zoomIncrement) / 100.0;
         NSQ.browser.saveCurrentZoom();
@@ -67,8 +69,10 @@ NoSquint.cmd = NoSquint.ns(function() { with (NoSquint) {
 
     this.reduceTextZoom = function() {
         var browser = getBrowser().mCurrentBrowser;
-        if (isImage(browser))
-            return NSQ.cmd.reduceFullZoom();
+        if (isImage(browser)) {
+            NSQ.cmd.reduceFullZoom();
+            return;
+        }
         var mdv = browser.markupDocumentViewer;
         mdv.textZoom = Math.round(mdv.textZoom * 100.0 - NSQ.prefs.zoomIncrement) / 100.0;
         NSQ.browser.saveCurrentZoom();
@@ -118,10 +122,10 @@ NoSquint.cmd = NoSquint.ns(function() { with (NoSquint) {
     this.statusPanelClick = function(event) {
         if (event.button == 0)
             // Left click, open site prefs.
-            return NSQ.cmd.openSiteSettings();
+            NSQ.cmd.openSiteSettings();
         else if (event.button == 1)
             // Middle click, open global prefs.
-            return NSQ.cmd.openGlobalSettings();
+            NSQ.cmd.openGlobalSettings();
     }
 
     this.statusPanelPrepareMenu = function(event) {
@@ -168,16 +172,19 @@ NoSquint.cmd = NoSquint.ns(function() { with (NoSquint) {
             return;
         var dlg = NSQ.storage.dialogs.site;
         if (dlg)
-            return dlg.setBrowser(NSQ.browser, browser);
-        window.openDialog('chrome://nosquint/content/dlg-site.xul', 'nsqSite', 'chrome', NSQ.browser, browser);
+            dlg.setBrowser(NSQ.browser, browser);
+        else
+            window.openDialog('chrome://nosquint/content/dlg-site.xul', 'nsqSite', 'chrome', NSQ.browser, browser);
     };
 
 
     /* Opens global prefs dialog or focuses it if it's already open. */
     this.openGlobalSettings = function(browser) {
         var dlg = NSQ.storage.dialogs.global;
-        if (dlg)
-            return dlg.focus();
+        if (dlg) {
+            dlg.focus();
+            return;
+        }
 
         browser = browser || gBrowser.selectedBrowser;
         var host = browser.currentURI.asciiHost;

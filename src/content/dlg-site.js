@@ -51,9 +51,11 @@ NoSquint.dialogs.site = NoSquint.ns(function() { with (NoSquint) {
             if (this.browser != mozBrowser || this.site != site)
                 // Settings opened for new site, revert any changes for last site.
                 this.revert();
-            else
+            else {
                 // Everything is the same.
-                return window.focus();
+                window.focus();
+                return;
+            }
         }
         this.browser = mozBrowser;
         this.site = site;

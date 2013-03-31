@@ -187,6 +187,7 @@ NoSquint.dialogs.global = NoSquint.ns(function() { with (NoSquint) {
             this.buttonAddException();
             return false;
         }
+        return true;
     };
 
     this.textPatternChange = function() {
@@ -200,6 +201,7 @@ NoSquint.dialogs.global = NoSquint.ns(function() { with (NoSquint) {
             this.buttonEditException();
             return false;
         }
+        return true;
     };
 
     this.excListSelect = function() {
