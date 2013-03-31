@@ -116,7 +116,7 @@
      */
     this.isChrome = function(browser) {
         var document = browser.docShell.document;
-        
+
         //this.debug('isChrome(): URL=' + document.URL + ', spec=' + browser.currentURI.spec + ', contentType=' + document.contentType);
         if (document.URL == undefined)
             return true;
@@ -175,9 +175,9 @@
     this.popup = function(type, title, text, value) {
         var prompts = Components.classes["@mozilla.org/embedcomp/prompt-service;1"]
                       .getService(Components.interfaces.nsIPromptService);
-        if (type == 'confirm') 
+        if (type == 'confirm')
             return prompts.confirmEx(window, title, text,
-                                     prompts.STD_YES_NO_BUTTONS, null, null, null, 
+                                     prompts.STD_YES_NO_BUTTONS, null, null, null,
                                      null, {value: null});
         else if (type == 'alert')
             return prompts.alert(window, title, text);
@@ -195,7 +195,7 @@
         for (let i = 0; i < arguments.length; i++) {
             var arg = arguments[i];
             // duck typing
-            if (arg.length !== undefined) { 
+            if (arg.length !== undefined) {
                 for (let idx = 0; idx < arg.length; idx++)
                     yield arg[idx];
             } else {

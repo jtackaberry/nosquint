@@ -52,7 +52,7 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
         gBrowser.tabContainer.addEventListener('TabOpen', this.handleTabOpen, false);
         gBrowser.tabContainer.addEventListener('TabSelect', this.handleTabSelect, false);
         gBrowser.tabContainer.addEventListener('TabClose', this.handleTabClose, false);
-        
+
         this.zoomAll(null, true);
         this.styleAll(null);
 
@@ -77,12 +77,12 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
         gBrowser.tabContainer.removeEventListener('TabOpen', this.handleTabOpen, false);
         gBrowser.tabContainer.removeEventListener('TabSelect', this.handleTabSelect, false);
         gBrowser.tabContainer.removeEventListener('TabClose', this.handleTabClose, false);
-        window.removeEventListener('DOMMouseScroll', this.handleMouseScroll, false); 
+        window.removeEventListener('DOMMouseScroll', this.handleMouseScroll, false);
     };
 
     this.hookZoomButtonsForReset = function() {
         if ($('zoom-out-button')) {
-            $('zoom-out-button').onclick = $('zoom-in-button').onclick = 
+            $('zoom-out-button').onclick = $('zoom-in-button').onclick =
                 function(event) {
                     if (event.button == 1)
                         NoSquint.cmd.buttonReset(event);
@@ -91,7 +91,7 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
             /* TODO
             $('zoom-out-button').addEventListener('DOMMouseScroll', function(event) {
                 // Implement wheel zooming over button here.
-            }, false); 
+            }, false);
             */
         }
     };
@@ -189,7 +189,7 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
             text = full = false;
             increment = NSQ.prefs.zoomIncrement * (event.detail < 0 ? 1 : -1);
             img = isImage(browser);
-                
+
             if (NSQ.prefs.wheelZoomInvert)
                 increment *= -1;
 
@@ -492,7 +492,7 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
         zoomAllTimer = null;
     };
 
-    /* Queues a zoomAll.  Useful when we might otherwise call zoomAll() 
+    /* Queues a zoomAll.  Useful when we might otherwise call zoomAll()
      * multiple times, such as in the case of multiple preferences being
      * updated at once.
      */

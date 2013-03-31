@@ -24,7 +24,7 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
 
     /* Active window we can use for window methods (e.g. setTimeout).  Because
      * NSQ.prefs is a singleton, it could be that the window we initialized
-     * with has been closed.  In that case, setTimeout will fail with 
+     * with has been closed.  In that case, setTimeout will fail with
      * NS_ERROR_NOT_INITIALIZED.  So we keep a reference to an available
      * window here we can call window.* methods with, and if the window
      * goes away, we find a new one using foreachNSQ().
@@ -130,7 +130,7 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
      * may not actually still be alive.
      */
     this.winFunc = function(func) {
-        var args = Array.prototype.slice.call(arguments, 1); 
+        var args = Array.prototype.slice.call(arguments, 1);
         try {
             return this.window[func].apply(this.window, args);
         } catch (e) {
@@ -319,7 +319,7 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
      */
     this.parseSites = function(sitesStr) {
         /* Parse site list from prefs.  The prefs string a list of site specs,
-         * delimited by a space, in the form: 
+         * delimited by a space, in the form:
          *
          *     sitename=text_level,timestamp,visits,full_level,textcolor,bgcolor,
          *              nobgimages,linkunvis,linkvis,linkunderline
@@ -405,7 +405,7 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
             for (let part in iter(parts)) {
                 if (part == '')
                     continue;
-                if (wildcards[part]) 
+                if (wildcards[part])
                     pattern.push(wildcards[part]);
                 else {
                     length += part.length;
@@ -449,7 +449,7 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
     this.pruneSites = function()  {
         if (!this.rememberSites || this.forgetMonths == 0)
             return;
-    
+
         var remove = [];
         var now = new Date();
         for (let [site, settings] in items(this.sites)) {
@@ -654,7 +654,7 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
         uri_host += ':' + uri_port;
 
         var match = null;
-        
+
         /* Iterate over each exception, trying to match it with the URI.
          * We break the loop on the first match, because exceptions are
          * sorted with highest weights first.

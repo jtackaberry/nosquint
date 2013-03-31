@@ -21,7 +21,7 @@ NoSquint.dialogs.site = NoSquint.ns(function() { with (NoSquint) {
         $('linksUnderline').addEventListener('CheckboxStateChange', restyle, false);
     };
 
-    
+
     // Immediately dismiss window.  Used when transitioning from Private Browsing mode.
     this.die = function() {
         this.finalize();

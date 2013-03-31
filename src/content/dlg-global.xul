@@ -6,7 +6,7 @@
 <dialog xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
         xmlns:html="http://www.w3.org/1999/xhtml"
         title="&ns.pref.title;"
-        buttons="help,accept,cancel" 
+        buttons="help,accept,cancel"
         ondialogaccept="NoSquint.dialogs.global.close()"
         ondialogcancel="NoSquint.dialogs.global.cancel()"
         ondialoghelp="NoSquint.dialogs.global.help()"
@@ -36,19 +36,19 @@
                             <radio label="&ns.pref.persistence.remember.label;" />
                             <vbox class="indent" id='siteForget-box'>
                                 <hbox align="center">
-                                    <checkbox id="siteForget" label="&ns.pref.persistence.forget.label;" 
+                                    <checkbox id="siteForget" label="&ns.pref.persistence.forget.label;"
                                               checked="false" />
                                     <menulist id="siteForget-menu">
                                         <menupopup>
                                             <menuitem value="12" label="&ns.pref.persistence.forget.year;"/>
-                                            <menuitem value="6" label="&ns.pref.persistence.forget.6months;" 
+                                            <menuitem value="6" label="&ns.pref.persistence.forget.6months;"
                                                       selected="true" />
                                             <menuitem value="3" label="&ns.pref.persistence.forget.3months;" />
                                             <menuitem value="1" label="&ns.pref.persistence.forget.month;"/>
                                         </menupopup>
                                     </menulist>
                                 </hbox>
-                                <checkbox id="siteSanitize" label="&ns.pref.persistence.sanitize.label;" 
+                                <checkbox id="siteSanitize" label="&ns.pref.persistence.sanitize.label;"
                                           checked="false" />
                             </vbox>
                             <radio label="&ns.pref.persistence.noRemember.label;" />
@@ -75,7 +75,7 @@
                                     </hbox>
                                     <menulist id="primaryZoomMethod-menu">
                                         <menupopup>
-                                            <menuitem value="full" label="&ns.pref.zooming.primaryMethod.full;" 
+                                            <menuitem value="full" label="&ns.pref.zooming.primaryMethod.full;"
                                                       selected="true"/>
                                             <menuitem value="text" label="&ns.pref.zooming.primaryMethod.text;"/>
                                         </menupopup>
@@ -88,7 +88,7 @@
                                         <label>&ns.pref.zooming.fullLevel.label;:</label>
                                     </hbox>
                                     <hbox align="center">
-                                        <textbox id="fullZoomLevel" size="2" type="number" min="40" 
+                                        <textbox id="fullZoomLevel" size="2" type="number" min="40"
                                                  max="300" increment="5" />
                                         <label class="percent">%</label>
                                     </hbox>
@@ -100,7 +100,7 @@
                                         <label>&ns.pref.zooming.textLevel.label;:</label>
                                     </hbox>
                                     <hbox align="center">
-                                        <textbox id="textZoomLevel" size="2" type="number" min="40" 
+                                        <textbox id="textZoomLevel" size="2" type="number" min="40"
                                                  max="300" increment="5" />
                                         <label class="percent">%</label>
                                     </hbox>
@@ -112,7 +112,7 @@
                                         <label>&ns.pref.zooming.increment.label;:</label>
                                     </hbox>
                                     <hbox align="center">
-                                        <textbox id="zoomIncrement" size="2" type="number" min="1" 
+                                        <textbox id="zoomIncrement" size="2" type="number" min="1"
                                                  max="100" increment="1" />
                                         <label class="percent">%</label>
                                     </hbox>
@@ -123,7 +123,7 @@
                             <!-- XXX: image zoom feature disabled for now.
                             <checkbox id="zoomImages" label="&ns.pref.zooming.images.label;" checked="false" />
                             -->
-                            <checkbox id="wheelZoomEnabled" label="&ns.pref.zooming.mousewheel.label;" 
+                            <checkbox id="wheelZoomEnabled" label="&ns.pref.zooming.mousewheel.label;"
                                       checked="false" />
                             <checkbox id="showStatus" label="&ns.pref.zooming.showstatus.label;" checked="false" />
                         </vbox>
@@ -157,7 +157,7 @@
                             <caption label="&ns.pref.colors.links.caption;" />
                             <vbox>
                                 <hbox>
-                                    <checkbox id="linksUnvisited" label="&ns.pref.colors.links.unvisited.label;" 
+                                    <checkbox id="linksUnvisited" label="&ns.pref.colors.links.unvisited.label;"
                                               checked="false" flex="1" />
                                     <colorpicker type='button' />
                                 </hbox>
@@ -180,32 +180,32 @@
                     <html:p style="margin: 0 7px 0.5em 7px; padding: 0;">&ns.pref.exceptions.info;</html:p>
 
                     <label value="&ns.pref.exceptions.pattern.label;:" />
-                    <textbox id="pattern" width="100%" oninput="NoSquint.dialogs.global.textPatternChange()" 
+                    <textbox id="pattern" width="100%" oninput="NoSquint.dialogs.global.textPatternChange()"
                              onkeypress="return NoSquint.dialogs.global.textPatternKeyPress(event)" />
                     <hbox>
                         <button label="&ns.pref.exceptions.copyButton.label;" id="copyURL-button"
                                 accesskey="&ns.pref.exceptions.copyButton.accesskey;"
                                 oncommand="NoSquint.dialogs.global.buttonCopyFromURL()" />
                         <spacer flex="1" />
-                        <button label="&ns.pref.exceptions.addButton.label;" icon="add" id="exceptionAdd-button" 
+                        <button label="&ns.pref.exceptions.addButton.label;" icon="add" id="exceptionAdd-button"
                                 accesskey="&ns.pref.exceptions.addButton.accesskey;"
                                 disabled="true" oncommand="NoSquint.dialogs.global.buttonAddException()" />
                     </hbox>
 
                     <separator />
 
-                <listbox id="exceptionsList" flex="1" seltype="multiple" rows="5" 
-                         onkeypress="return NoSquint.dialogs.global.excListKeyPress(event)" 
+                <listbox id="exceptionsList" flex="1" seltype="multiple" rows="5"
+                         onkeypress="return NoSquint.dialogs.global.excListKeyPress(event)"
                          onselect="NoSquint.dialogs.global.excListSelect()">
                     <listhead>
                         <listheader label="&ns.pref.exceptions.list.col1.label;" />
                     </listhead>
                 </listbox>
                 <hbox>
-                    <button label="&ns.pref.exceptions.editButton.label;" id="exceptionEdit-button" 
+                    <button label="&ns.pref.exceptions.editButton.label;" id="exceptionEdit-button"
                             accesskey="&ns.pref.exceptions.editButton.accesskey;"
                             oncommand="NoSquint.dialogs.global.buttonEditException()" />
-                    <button label="&ns.pref.exceptions.removeButton.label;" 
+                    <button label="&ns.pref.exceptions.removeButton.label;"
                             icon="remove" id="exceptionRemove-button"
                             accesskey="&ns.pref.exceptions.removeButton.accesskey;"
                             oncommand="NoSquint.dialogs.global.buttonRemoveException()" />

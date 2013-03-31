@@ -55,5 +55,5 @@ var NoSquint = {
     }
 };
 
-window.addEventListener("load", NoSquint.init, false); 
+window.addEventListener("load", NoSquint.init, false);
 window.addEventListener("unload", NoSquint.destroy, false);

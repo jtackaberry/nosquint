@@ -11,7 +11,7 @@ NoSquint.dialogs.global = NoSquint.ns(function() { with (NoSquint) {
         $('rememberSites').selectedIndex = Number(!NSQ.prefs.rememberSites);
         $('siteForget').checked = (NSQ.prefs.forgetMonths != 0);
         $('siteForget-menu').value = NSQ.prefs.forgetMonths;
-        $('siteForget').addEventListener('CheckboxStateChange', 
+        $('siteForget').addEventListener('CheckboxStateChange',
                                          function() NSQ.dialogs.global.forgetMonthsChecked(), false);
         $('siteSanitize').checked = branchPI.getBoolPref('extensions-nosquint');
 

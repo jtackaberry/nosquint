@@ -84,7 +84,7 @@ NoSquint.interfaces = NoSquint.ns(function() { with (NoSquint) {
         },
 
         onStateChange: function(progress, request, state, astatus) {
-            //debug("LISTENER: request=" + request + ", state=" + state + ", status=" + 
+            //debug("LISTENER: request=" + request + ", state=" + state + ", status=" +
             //      astatus + ", type=" + this.browser.docShell.document.contentType);
 
             /* Check the current content type against the content type we initially got.
@@ -275,7 +275,7 @@ NoSquint.interfaces = NoSquint.ns(function() { with (NoSquint) {
                             var addon = subject.QueryInterface(Components.interfaces.nsIUpdateItem);
                             this.onDisabling(addon, true);
                             break;
-                        
+
                         case "item-cancel-action":
                             var addon = subject.QueryInterface(Components.interfaces.nsIUpdateItem);
                             this.onOperationCancelled(addon);

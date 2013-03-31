@@ -11,7 +11,7 @@
 <dialog xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
         xmlns:html="http://www.w3.org/1999/xhtml"
         title="&ns.pref.title;"
-        buttons="extra1,accept,cancel" 
+        buttons="extra1,accept,cancel"
         ondialogaccept="NoSquint.dialogs.site.close()"
         ondialogcancel="NoSquint.dialogs.site.cancel()"
         ondialogextra1="NoSquint.dialogs.site.openGlobalSettings()"
@@ -63,7 +63,7 @@
                             <spacer flex="1" />
                             <label value="&ns.pref.textZoom.label;:" />
                         </hbox>
-                        <scale id="text-zoom-slider" min="40" increment="1" max="300" 
+                        <scale id="text-zoom-slider" min="40" increment="1" max="300"
                                onchange="NoSquint.dialogs.site.sliderChange(this)"/>
                         <hbox align="center">
                             <textbox id="text-zoom-level" size="2" type="number" min="40" max="300" increment="5"  />
@@ -98,7 +98,7 @@
                     <caption label="&ns.pref.colors.links.caption;" />
                     <vbox>
                         <hbox>
-                            <checkbox id="linksUnvisited" label="&ns.pref.colors.links.unvisited.label;" 
+                            <checkbox id="linksUnvisited" label="&ns.pref.colors.links.unvisited.label;"
                                       checked="false" flex="1" />
                             <colorpicker type='button' />
                         </hbox>
