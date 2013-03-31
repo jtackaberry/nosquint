@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
-<RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#" 
+<RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
      xmlns:em="http://www.mozilla.org/2004/em-rdf#">
 
     <Description about="urn:mozilla:install-manifest">
-    
+
         <em:id>nosquint@urandom.ca</em:id>
         <em:name>NoSquint</em:name>
         <em:version>2.1.7</em:version>
@@ -12,7 +12,7 @@
         <!-- optional items -->
         <em:homepageURL>http://urandom.ca/nosquint/</em:homepageURL>
         <em:optionsURL>chrome://nosquint/content/dlg-global.xul</em:optionsURL>
-        <em:type>2</em:type> <!-- type=extension --> 
+        <em:type>2</em:type> <!-- type=extension -->
 
         <!-- Firefox -->
         <em:targetApplication>

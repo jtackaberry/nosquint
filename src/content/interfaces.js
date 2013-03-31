@@ -117,6 +117,8 @@ NoSquint.interfaces = NoSquint.ns(function() { with (NoSquint) {
                          * 100ms.  This seems to work ok empirically, but a race
                          * is theoretically possible. *grmbl*
                          */
+                         // XXX 2013-13-31: with Firefox 20 this doesn't seem to be
+                         // needed anymore.
                         var b = this.browser;
                         setTimeout(function() NSQ.browser.zoom(b), 100);
                     } else
