@@ -133,7 +133,7 @@ NoSquint.dialogs.global = NoSquint.ns(function() { with (NoSquint) {
     // Enables or disables all elements in the given hierarchy
     this.enableTree = function(node, state) {
         for (let child in iter(node.childNodes)) {
-            if (state && child.disabled == false || child.disabled == true)
+            if (child.disabled === undefined || child.disabled == true || (state && child.disabled == false))
                 child.disabled = state;
             if (child.childNodes.length)
                 this.enableTree(child, state);
