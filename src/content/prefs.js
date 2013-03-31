@@ -492,6 +492,12 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
             pruneTimer = this.winFunc('setTimeout', function() { pruneTimer = null; NSQ.prefs.pruneSites(); }, 24*60*60*1000);
     };
 
+    this.isSiteRecordDefault = function(record) {
+        if ([record[0]].concat(record.slice(3)).toString() == [0, 0, '0', '0', false, '0', '0', false].toString())
+            return true;
+        else
+            return false;
+    }
 
     /* Updates the site list for the given site name to set the given levels
      * (2-tuple of [text, full]), and then queues a site list save.
@@ -528,8 +534,7 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
 
         // Check newly updated record against defaults.  If all values are default, we
         // remove the record.
-        if ([record[0]].concat(record.slice(3)).toString() == [0, 0, '0', '0', false, '0', '0', false].toString())
-            // All defaults.
+        if (this.isSiteRecordDefault(record))
             delete this.sites[site];
 
         debug('updateSiteList(): site=' + site + ', record=' + record);
@@ -543,14 +548,16 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
     this.updateSiteTimestamp = function(site) {
         if (!site || !this.sites[site])
             return;
-
-        this.sites[site][1] = new Date().getTime();
-        this.sites[site][2] += 1;
-        if (this.rememberSites)
-            // Save updated timestamp.  Timestamps are only updated on
-            // the first page accessed for a given visit to that site,
-            // so this shouldn't be too bad.
-            this.queueSaveSiteList();
+        if (this.isSiteRecordDefault(this.sites[site]))
+            delete this.sites[site];
+        else {
+            this.sites[site][1] = new Date().getTime();
+            this.sites[site][2] += 1;
+        }
+        // Save updated timestamp.  Timestamps are only updated on
+        // the first page accessed for a given visit to that site,
+        // so this shouldn't be too bad.
+        this.queueSaveSiteList(false);
     };
 
 
