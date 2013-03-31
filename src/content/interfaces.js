@@ -109,7 +109,7 @@ NoSquint.interfaces = NoSquint.ns(function() { with (NoSquint) {
             } else if (state & stateFlag) {
                 if (!this.zoomApplied) {
                     this.zoomApplied = true;
-                    if (NSQ.browser.observer.inPrivateBrowsing) {
+                    if (NSQ.browser.isPrivate) {
                         /* In private browsing mode, Firefox does not honor
                          * siteSpecific=false and resets the zoom level back to
                          * 100% after every page load (bug #526828).  So we
@@ -178,45 +178,31 @@ NoSquint.interfaces = NoSquint.ns(function() { with (NoSquint) {
 
 
 
-    /* Custom observer attached to nsIObserverService.  Used to detect changes
-     * to private browsing state, and addon disable/uninstall.  Some code
-     * borrowed from https://developer.mozilla.org/En/Supporting_private_browsing_mode
+    /* Custom observer attached to nsIObserverService.  Used to detect new windows
+     * (to save pending site settings) and addon disable/uninstall.
      */
-    this.Observer = function() {  
+    this.Observer = function() {
         this.id = 'NoSquint.interfaces.Observer';
         this.init();
     };
 
-    this.Observer.prototype = {  
-        _os: null,  
-        _inPrivateBrowsing: false, // whether we are in private browsing mode  
-        watcher: {}, // the watcher object  
-       
-        init: function () {  
-            this._os = Components.classes["@mozilla.org/observer-service;1"]  
-                                 .getService(Components.interfaces.nsIObserverService);  
-            this._os.addObserver(this, "private-browsing", false);  
-            this._os.addObserver(this, "quit-application-granted", false);  
+    this.Observer.prototype = {
+        _os: null,
+
+        init: function () {
+            this._os = Components.classes["@mozilla.org/observer-service;1"]
+                                 .getService(Components.interfaces.nsIObserverService);
+            this._os.addObserver(this, "quit-application-granted", false);
             if (is3x())
-                this._os.addObserver(this, "em-action-requested", false);  
+                this._os.addObserver(this, "em-action-requested", false);
             else {
                 Components.utils.import("resource://gre/modules/AddonManager.jsm");
                 AddonManager.addAddonListener(this);
             }
-
-            try {  
-                var pbs = Components.classes["@mozilla.org/privatebrowsing;1"]  
-                                  .getService(Components.interfaces.nsIPrivateBrowsingService);  
-                this._inPrivateBrowsing = pbs.privateBrowsingEnabled;  
-            } catch(ex) {  
-                // ignore exceptions in older versions of Firefox  
-            }
-
         },
 
         unhook: function() {
-            this._os.removeObserver(this, "quit-application-granted");  
-            this._os.removeObserver(this, "private-browsing");  
+            this._os.removeObserver(this, "quit-application-granted");
             if (is3x())
                 this._os.removeObserver(this, "em-action-requested");
             else
@@ -245,24 +231,8 @@ NoSquint.interfaces = NoSquint.ns(function() { with (NoSquint) {
             NSQ.storage.disabled = false;
         },
 
-        observe: function (subject, topic, data) {  
+        observe: function (subject, topic, data) {
             switch (topic) {
-                case "private-browsing":
-                    switch (data) {
-                        case "enter":
-                            this._inPrivateBrowsing = true;  
-                            if ("onEnterPrivateBrowsing" in this.watcher)
-                                this.watcher.onEnterPrivateBrowsing();  
-                            break;
-
-                        case "exit":
-                            this._inPrivateBrowsing = false;  
-                            if ("onExitPrivateBrowsing" in this.watcher)
-                                this.watcher.onExitPrivateBrowsing();  
-                            break;
-                    }
-                    break;
-
                 case "quit-application-granted":
                     NSQ.storage.quitting = true;
                     break;
@@ -283,10 +253,6 @@ NoSquint.interfaces = NoSquint.ns(function() { with (NoSquint) {
                     }
                     break;
             }
-        },  
-       
-        get inPrivateBrowsing() {  
-            return this._inPrivateBrowsing;  
-        }
-    }; 
+        },
+    };
 }});

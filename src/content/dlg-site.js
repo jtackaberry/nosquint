@@ -13,7 +13,7 @@ NoSquint.dialogs.site = NoSquint.ns(function() { with (NoSquint) {
         $('text-zoom-level').onchange = function() NSQ.dialogs.site.valueChange(this);
 
         var restyle = function() NSQ.dialogs.site.style(true, false);
-        for (let id in NSQ.prefs.defaultColors) {
+        for (let id in NSQ.browser.prefs.defaultColors) {
             $(id).addEventListener('CheckboxStateChange', this.colorChecked, false);
             $(id).parentNode.childNodes[1].onchange = restyle;
         }
@@ -59,7 +59,7 @@ NoSquint.dialogs.site = NoSquint.ns(function() { with (NoSquint) {
         this.site = site;
 
         var [text, full] = NSQ.browser.getZoomForBrowser(this.browser);
-        var style = NSQ.prefs.getStyleForSite(this.site);
+        var style = NSQ.browser.prefs.getStyleForSite(this.site);
 
         this.updateWarning();
 
@@ -67,7 +67,7 @@ NoSquint.dialogs.site = NoSquint.ns(function() { with (NoSquint) {
         $('text-zoom-slider').value = text;
         $('full-zoom-slider').value = full;
 
-        for (let [id, defcolor] in items(NSQ.prefs.defaultColors)) {
+        for (let [id, defcolor] in items(NSQ.browser.prefs.defaultColors)) {
             $(id).parentNode.childNodes[1].color = (!style || style[id] == '0' ? defcolor : style[id]);
             $(id).checked = Boolean(style && style[id] && style[id] != '0');
             this.colorChecked.apply($(id));
@@ -80,9 +80,9 @@ NoSquint.dialogs.site = NoSquint.ns(function() { with (NoSquint) {
 
     this.updateWarning = function() {
         var content = null;
-        if (NSQ.browser.observer.inPrivateBrowsing)
+        if (NSQ.browser.isPrivate)
             content = this.strings.warningPrivateBrowsing;
-        else if (!NSQ.prefs.rememberSites)
+        else if (!NSQ.browser.prefs.rememberSites)
             content = this.strings.warningForgetSites;
 
         $('warning-box-content').innerHTML = content;
@@ -117,7 +117,7 @@ NoSquint.dialogs.site = NoSquint.ns(function() { with (NoSquint) {
     };
 
     this.buttonUseDefault = function(target) {
-        var [text, full] = NSQ.prefs.getZoomDefaults(this.site);
+        var [text, full] = NSQ.browser.prefs.getZoomDefaults(this.site);
         var input = $(target.id.replace('button', 'level'));
         input.value = (input.id == 'text-zoom-level' ? text : full);
         input.onchange();
@@ -138,7 +138,7 @@ NoSquint.dialogs.site = NoSquint.ns(function() { with (NoSquint) {
         var full = fromForm ? $('full-zoom-level').value : null;
         NSQ.browser.zoom(this.browser, text, full);
         if (save)
-            NSQ.prefs.updateSiteList(this.site, [text, full]);
+            NSQ.browser.prefs.updateSiteList(this.site, [text, full]);
     };
 
 
@@ -157,7 +157,7 @@ NoSquint.dialogs.site = NoSquint.ns(function() { with (NoSquint) {
         var style = null;
         if (fromForm) {
             var style = {enabled: false};
-            for (let attr in iter(NSQ.prefs.defaultColors)) {
+            for (let attr in iter(NSQ.browser.prefs.defaultColors)) {
                 style[attr] = $(attr).checked ? $(attr).parentNode.childNodes[1].color : null;
                 style.enabled = style.enabled || Boolean(style[attr]);
             }
@@ -167,9 +167,9 @@ NoSquint.dialogs.site = NoSquint.ns(function() { with (NoSquint) {
             }
         }
         if (save)
-            NSQ.prefs.updateSiteList(this.site, null, style);
+            NSQ.browser.prefs.updateSiteList(this.site, null, style);
         if (style)
-            style = NSQ.prefs.applyStyleGlobals(style);
+            style = NSQ.browser.prefs.applyStyleGlobals(style);
 
         NSQ.browser.style(this.browser, style);
     };

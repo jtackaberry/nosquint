@@ -2,6 +2,8 @@
     // Shorter alias
     this.NSQ = NoSquint;
 
+    Components.utils.import("resource://gre/modules/PrivateBrowsingUtils.jsm");
+
     /* Setup global (spans all windows) storage object.  The storage object
      * exists once, and is referenced for each window.  (In contrast, doing
      * Application.storage.set('foo', [1,2]) will store a copy of the list.)
@@ -162,11 +164,21 @@
         var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"]
                            .getService(Components.interfaces.nsIWindowMediator);
         return function(callback) {
+            // For private windows, apply callback only to self.
+            if (PrivateBrowsingUtils.isWindowPrivate(window)) {
+                callback(this.NSQ);
+                return window;
+            }
+
+            // For non-private windows, apply callback to all other non-
+            // private windows.
             var enumerator = wm.getEnumerator("navigator:browser");
             var win;
-            while (win = enumerator.getNext())
-                if (win.NoSquint && callback(win.NoSquint) === false)
+            while ((win = enumerator.getNext())) {
+                if (win.NoSquint && !PrivateBrowsingUtils.isWindowPrivate(win) &&
+                    callback(win.NoSquint) === false)
                     break;
+            }
             return win;
         };
     })();

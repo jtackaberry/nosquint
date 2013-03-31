@@ -22,7 +22,6 @@
 
     <script type="application/x-javascript" src="chrome://nosquint/content/init.js" />
     <script type="application/x-javascript" src="chrome://nosquint/content/lib.js" />
-    <script type="application/x-javascript" src="chrome://nosquint/content/prefs.js" />
     <script type="application/x-javascript" src="chrome://nosquint/content/cmd.js" />
     <script type="application/x-javascript" src="chrome://nosquint/content/dlg-site.js" />
 

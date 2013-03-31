@@ -1,18 +1,25 @@
 // chrome://browser/content/browser.xul
 
 /******************************************************************************
- * Preferences (Singleton)
+ * Preferences
  *
  * Namespace for anything pref related, including service objects, any
  * currently cached values, routines for parsing, or convenience functions
  * for accessing preferences.
+ *
+ * Each Private Browsing window gets its own NSQ.prefs which doesn't listen
+ * to sites pref changes.  Non-private windows share the same NSQ.prefs.
  */
 
 NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
-    // Namespace is a singleton, so return any previously instantiated prefs object.
-    if (NSQ.storage.prefs)
-        return NSQ.storage.prefs;
-    NSQ.storage.prefs = this;
+    this.isPrivate = PrivateBrowsingUtils.isWindowPrivate(window);
+    if (!this.isPrivate) {
+        // For non-private windows, namespace is a singleton, so return any
+        // previously instantiated prefs object.
+        if (NSQ.storage.prefs)
+            return NSQ.storage.prefs;
+        NSQ.storage.prefs = this;
+    }
 
     this.id = 'NoSquint.prefs';
     this.defaultColors = {
@@ -145,12 +152,20 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
     };
 
     this.preload = function() {
-        // Initialize preferences in this order; some of them require other prefs
-        // have been loaded.  (e.g. forgetMonths needs rememberSites)
+        // If this is a prefs instance for a private window, clone the shared
+        // non-private site list if available.
+        if (this.isPrivate && NSQ.storage.prefs)
+            this.sites = NSQ.storage.prefs.cloneSites();
+        else
+            this.observe(null, "nsPref:changed", "sites");
+
+        // Initialize other preferences in this order; some of them require
+        // other prefs have been loaded.  (e.g. forgetMonths needs
+        // rememberSites)
         var prefs = [
             'fullZoomLevel', 'textZoomLevel', 'zoomIncrement', 'wheelZoomEnabled', 'hideStatus',
-            'action', 'sitesSaveDelay', 'rememberSites', 'exceptions', 'sites', 'forgetMonths',
-            'fullZoomPrimary', 'wheelZoomInvert', 'zoomImages', 'colorText', 'colorBackground', 
+            'action', 'sitesSaveDelay', 'rememberSites', 'exceptions', 'forgetMonths',
+            'fullZoomPrimary', 'wheelZoomInvert', 'zoomImages', 'colorText', 'colorBackground',
             'colorBackgroundImages', 'linksUnvisited', 'linksVisited', 'linksUnderline'
         ];
         for (let pref in iter(prefs))
@@ -164,7 +179,6 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
             // Not a pref change.
             return;
 
-        debug('observe(): data=' + data);
         switch (data) {
             case 'siteSpecific':
                 if (branchBZ.getBoolPref('siteSpecific') == false || NSQ.storage.disabled || NSQ.storage.quitting)
@@ -261,6 +275,11 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
                     ignoreNextSitesChange = false;
                     break;
                 }
+                if (subject != null && this.isPrivate)
+                    // Private windows don't refresh from pref changes.  (If subject is
+                    // null then this is a preload() and we don't want to skip that.)
+                    break;
+
                 this.sites = this.parseSites(branchNS.getCharPref('sites'));
                 if (saveTimer) {
                     /* FIXME: looks like the sites list pref was updated (possibly by
@@ -389,7 +408,7 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
          */
         function regexpify(pattern, re_star, re_dblstar) {
             var parts = pattern.split(/(\[\*+\]|\*+)/);
-            var pattern = [];
+            pattern = [];
             var sub = [];
             var length = 0;
 
@@ -514,9 +533,7 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
             delete this.sites[site];
 
         debug('updateSiteList(): site=' + site + ', record=' + record);
-
-        if (this.rememberSites)
-            this.queueSaveSiteList();
+        this.queueSaveSiteList(true);
     };
 
 
@@ -543,7 +560,11 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
      * else the next time a change is made in the Settings dialog, it will
      * be ignored.
      */
-    this.queueSaveSiteList = function() {
+    this.queueSaveSiteList = function(flush) {
+        if (!this.rememberSites || this.isPrivate)
+            // Now allowed to save changes, don't queue save.
+            return;
+
         this.stopQueueSaveSiteList();
 
         /* The list is actually saved (by default) 5s later, so if the user
@@ -551,13 +572,14 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
          * needlessly iterating over the sites array.
          */
         debug("queueSaveSiteList(): delay=" + this.saveDelay);
-        saveTimer = this.winFunc('setTimeout', function() NSQ.prefs.saveSiteList(), this.saveDelay);
+        saveTimer = this.winFunc('setTimeout', function() NSQ.prefs.saveSiteList(flush), this.saveDelay);
     };
 
-
-    /* Store the sites list right now. */
-    this.saveSiteList = function(force) {
-        if (!this.rememberSites || (NSQ.browser && NSQ.browser.observer.inPrivateBrowsing && !force))
+    /* Store the sites list right now.  If flush is true, the prefs file is
+     * committed to disk.
+     */
+    this.saveSiteList = function(flush) {
+        if (!this.rememberSites || (this.isPrivate && !force))
             /* Private Browsing mode is enabled or rememberSites disabled; do
              * not save site list.
              */
@@ -577,12 +599,12 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
          */
         ignoreNextSitesChange = true;
         branchNS.setCharPref('sites', sites.join(' '));
-        this.save();
-        debug("saveSiteList(): took: " + (new Date().getTime() - t0) + "ms");
+        if (flush)
+            this.save();
+        debug("saveSiteList(): took: " + (new Date().getTime() - t0) + "ms, flush=" + flush);
         this.winFunc('clearTimeout', saveTimer);
         saveTimer = null;
     };
-
 
     /* Stops a previously queued site list save.  Returns true if a save was
      * queued and aborted, or false if no save was queued.
@@ -731,7 +753,7 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
     };
 
 
-    // Saves all preferences, including exceptions BUT NOT sites.
+    // Saves all global preferences, including exceptions BUT NOT sites.
     this.saveAll = function(exceptions) {
         const intPrefs = [
             'fullZoomLevel', 'textZoomLevel', 'zoomIncrement', 'forgetMonths'
@@ -858,6 +880,5 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
             AddonManager.getAddonByID('nosquint@urandom.ca', callback);
         }
     };
-
-
+    return this;
 }});

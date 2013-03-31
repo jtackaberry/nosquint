@@ -14,39 +14,13 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
 
     this.init = function() {
         this.gBrowser = gBrowser;
+        this.isPrivate = PrivateBrowsingUtils.isWindowPrivate(window);
+        this.prefs = NSQ.prefs;
         this.updateZoomMenu();
 
         this.observer = new NSQ.interfaces.Observer();
-        this.observer.watcher = {
-            onEnterPrivateBrowsing: function() {
-                this.closeSiteSettings();
-                // Switching the private browsing mode.  Store any current pending
-                // changes now.
-                NSQ.prefs.saveSiteList(true);
-                // Save current (non-private) site data for when we exit private
-                // browsing.
-                this.origSites = NSQ.prefs.cloneSites();
-            },
 
-            onExitPrivateBrowsing: function() {
-                this.closeSiteSettings();
-                // Restore previously saved site data and rezoom/style all tabs.
-                NSQ.prefs.sites = this.origSites;
-                this.origSites = null;
-                NSQ.browser.zoomAll();
-                NSQ.browser.styleAll();
-            },
-
-            closeSiteSettings: function() {
-                if (NSQ.storage.dialogs.site)
-                    NSQ.storage.dialogs.site.die();
-            }
-        };
-
-        if (this.observer.inPrivateBrowsing)
-            this.observer.watcher.onEnterPrivateBrowsing();
-
-        window.addEventListener('DOMMouseScroll', this.handleMouseScroll, false); 
+        window.addEventListener('DOMMouseScroll', this.handleMouseScroll, false);
         // XXX: used for image zoom, which feature is currently removed.
         //window.addEventListener("resize", this.handleResize, false);
         gBrowser.tabContainer.addEventListener('TabOpen', this.handleTabOpen, false);
