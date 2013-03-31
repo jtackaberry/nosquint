@@ -103,6 +103,8 @@ NoSquint.dialogs.global = NoSquint.ns(function() { with (NoSquint) {
             }
         }
         NSQ.prefs.saveAll(exceptions);
+        if (NSQ.storage.dialogs.site)
+            NSQ.storage.dialogs.site.discoverSiteNameChange();
         this.finalize();
     };
 

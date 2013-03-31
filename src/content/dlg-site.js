@@ -43,9 +43,13 @@ NoSquint.dialogs.site = NoSquint.ns(function() { with (NoSquint) {
         NSQ.storage.dialogs.site = null;
     };
 
+    this.discoverSiteNameChange = function() {
+        var site = this.browser.getUserData('nosquint').site;
+        if (site != this.site)
+            this.setBrowser(NSQ.browser, this.browser);
+    };
 
     this.setBrowser = function(nsqBrowser, mozBrowser) {
-        NSQ.browser = nsqBrowser;
         var site = mozBrowser.getUserData('nosquint').site;
         if (this.site) {
             if (this.browser != mozBrowser || this.site != site)
@@ -57,6 +61,8 @@ NoSquint.dialogs.site = NoSquint.ns(function() { with (NoSquint) {
                 return;
             }
         }
+
+        NSQ.browser = nsqBrowser;
         this.browser = mozBrowser;
         this.site = site;
 
