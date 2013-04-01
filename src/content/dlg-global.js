@@ -42,6 +42,7 @@ NoSquint.dialogs.global = NoSquint.ns(function() { with (NoSquint) {
         for (let exc in iter(NSQ.prefs.exceptions))
             this.exceptionsListAdd(exc[0].replace(/%20/g, ' '), false);
         $('exceptionsList').setUserData('nosquint.changed', false, null);
+        this.excListSelect();
     };
 
     this.focus = function() {
@@ -208,8 +209,9 @@ NoSquint.dialogs.global = NoSquint.ns(function() { with (NoSquint) {
 
     this.excListSelect = function() {
         // Edit/Remove buttons enabled when one of the listitems is selected.
-        $('exceptionRemove-button').disabled = ($('exceptionsList').selectedItems.length == 0);
-        $('exceptionEdit-button').disabled = ($('exceptionsList').selectedItems.length != 1);
+        var nsel = $('exceptionsList').selectedItems.length;
+        $('exceptionRemove-button').disabled = (nsel == 0);
+        $('exceptionEdit-button').disabled = (nsel != 1);
     };
 
     this.buttonCopyFromURL = function() {
