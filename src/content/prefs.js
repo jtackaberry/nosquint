@@ -870,8 +870,11 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
                 cur_parts = addon.version.split('.');
                 last_parts = (NSQ.prefs.lastVersion || '0.0').split('.');
                 if (cur_parts[0] > last_parts[0] || (cur_parts[0] == last_parts[0] && cur_parts[1] > last_parts[1]))
-                    if (!found)
-                        NSQ.browser.gBrowser.selectedTab = gBrowser.addTab('about:nosquint');
+                    if (!found) {
+                        defer(500, function() {
+                            NSQ.browser.gBrowser.selectedTab = gBrowser.addTab('about:nosquint');
+                        });
+                    }
                 branchNS.setCharPref('version', addon.version);
                 NoSquint.prefs.save();
             }
