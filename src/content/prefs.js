@@ -239,9 +239,11 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
                 foreachNSQ(function(NSQ) {
                     if (NSQ.browser) {
                         $('nosquint-status').hidden = hideStatus;
-                        if (!hideStatus)
+                        if (!hideStatus) {
                             // Status now being shown; update it to reflect current values.
                             NSQ.browser.queueUpdateStatus();
+                            NSQ.browser.enableAddonBar();
+                        }
                     }
                 });
                 break;
