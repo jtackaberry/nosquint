@@ -588,7 +588,7 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
      * committed to disk.
      */
     this.saveSiteList = function(flush) {
-        if (!this.rememberSites || (this.isPrivate && !force))
+        if (!this.rememberSites || this.isPrivate)
             /* Private Browsing mode is enabled or rememberSites disabled; do
              * not save site list.
              */
