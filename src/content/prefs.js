@@ -242,7 +242,6 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
                         if (!hideStatus) {
                             // Status now being shown; update it to reflect current values.
                             NSQ.browser.queueUpdateStatus();
-                            NSQ.browser.enableAddonBar();
                         }
                     }
                 });

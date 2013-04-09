@@ -32,9 +32,6 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
 
         this.hookZoomButtonsForReset();
         NoSquint.prefs.checkVersionChange();
-
-        if (!NSQ.prefs.hideStatus)
-            this.enableAddonBar();
     };
 
     this.destroy = function() {
