@@ -728,6 +728,13 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
         return [null, null];
     };
 
+
+    this.getZoomForSiteWithDefaults = function(site) {
+        var [text, full] = this.getZoomForSite(site);
+        var [text_default, full_default] = this.getZoomDefaults(site);
+        return [text || text_default, full || full_default];
+    };
+
     /* Gets the style parameters for the given site name.  Returns null if
      * the site has no settings.
      */
@@ -744,6 +751,11 @@ NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
             };
         }
         return null;
+    };
+
+   this.getStyleForSiteWithDefaults = function(site) {
+        var style = this.getStyleForSite(site);
+        return this.applyStyleGlobals(style);
     };
 
     /* Applies global styles to the given style object.  Attributes that have

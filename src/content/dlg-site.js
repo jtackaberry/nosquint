@@ -62,6 +62,8 @@ NoSquint.dialogs.site = NoSquint.ns(function() { with (NoSquint) {
             }
         }
 
+        // We haven't initialized settings yet, they shouldn't be considered authoritative
+        this.dialogSettingsAuthoritative = false;
         NSQ.browser = nsqBrowser;
         this.browser = mozBrowser;
         this.site = site;
@@ -84,6 +86,7 @@ NoSquint.dialogs.site = NoSquint.ns(function() { with (NoSquint) {
             $(attr).checked = Boolean(style && style[attr] && style[attr] != '0');
         window.focus();
         window.sizeToContent();
+        this.dialogSettingsAuthoritative = true;
     };
 
     this.updateWarning = function() {
@@ -99,6 +102,7 @@ NoSquint.dialogs.site = NoSquint.ns(function() { with (NoSquint) {
     };
 
     this.revert = function() {
+        this.dialogSettingsAuthoritative = false;
         this.zoom(false, false);
         this.style(false, false);
     };
@@ -142,11 +146,17 @@ NoSquint.dialogs.site = NoSquint.ns(function() { with (NoSquint) {
     };
 
     this.zoom = function(fromForm, save) {
-        var text = fromForm ? $('text-zoom-level').value : null;
-        var full = fromForm ? $('full-zoom-level').value : null;
+        var [text, full] = fromForm ? this.getZoomLevels() : [null, null];
         NSQ.browser.zoom(this.browser, text, full);
         if (save)
             NSQ.browser.prefs.updateSiteList(this.site, [text, full]);
+    };
+
+    this.getZoomLevels = function() {
+        if (this.dialogSettingsAuthoritative)
+            return [$('text-zoom-level').value, $('full-zoom-level').value];
+        else
+            return NSQ.browser.prefs.getZoomForSiteWithDefaults(this.site);
     };
 
 
@@ -161,19 +171,29 @@ NoSquint.dialogs.site = NoSquint.ns(function() { with (NoSquint) {
             NSQ.dialogs.site.style(true, false);
     };
 
+    this.getStyle = function(noDefaults) {
+        if (!this.dialogSettingsAuthoritative)
+            return NSQ.browser.prefs.getStyleForSiteWithDefaults(this.site);
+
+        // Return style object according to dialog settings.
+        var style = {enabled: false};
+        for (let attr in iter(NSQ.browser.prefs.defaultColors)) {
+            style[attr] = $(attr).checked ? $(attr).parentNode.childNodes[1].color : null;
+            style.enabled = style.enabled || Boolean(style[attr]);
+        }
+        for (let attr in iter(['colorBackgroundImages', 'linksUnderline'])) {
+            style[attr] = Boolean($(attr).checked);
+            style.enabled = style.enabled || Boolean(style[attr]);
+        }
+        if (noDefaults === undefined || !noDefaults)
+            style = NSQ.browser.prefs.applyStyleGlobals(style);
+        return style;
+    };
+
     this.style = function(fromForm, save) {
         var style = null;
-        if (fromForm) {
-            var style = {enabled: false};
-            for (let attr in iter(NSQ.browser.prefs.defaultColors)) {
-                style[attr] = $(attr).checked ? $(attr).parentNode.childNodes[1].color : null;
-                style.enabled = style.enabled || Boolean(style[attr]);
-            }
-            for (let attr in iter(['colorBackgroundImages', 'linksUnderline'])) {
-                style[attr] = Boolean($(attr).checked);
-                style.enabled = style.enabled || Boolean(style[attr]);
-            }
-        }
+        if (fromForm)
+            var style = this.getStyle(true);
         if (save)
             NSQ.browser.prefs.updateSiteList(this.site, null, style);
         if (style)

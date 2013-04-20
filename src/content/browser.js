@@ -364,10 +364,18 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
             browser.getUserData('nosquint').site = site;
             debug('getZoomForBrowser(): after getSiteFromBrowser(), site=' + site);
         }
-
-        var [text, full] = NSQ.prefs.getZoomForSite(site);
-        var [text_default, full_default] = NSQ.prefs.getZoomDefaults(site);
-        return [text || text_default, full || full_default];
+        // If the site dialog is open on the current site, get the zoom levels
+        // from that instead as it should be treated as authoritative.
+        var siteDlg = NSQ.storage.dialogs.site;
+        if (siteDlg && siteDlg.site == site) {
+            // Exception: if the site dialog is for a private window other
+            // than this one, don't use the site dialog settings otherwise
+            // private window settings would leak out of the window.
+            if (this.isPrivate == isWindowPrivate(siteDlg.browser.contentWindow) &&
+                (!this.isPrivate || siteDlg.browser == browser))
+                return siteDlg.getZoomLevels();
+        }
+        return NSQ.prefs.getZoomForSiteWithDefaults(site);
     };
 
 
@@ -482,8 +490,15 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
      */
     this.getStyleForBrowser = function(browser) {
         var site = browser.getUserData('nosquint').site;
-        var style = NSQ.prefs.getStyleForSite(site);
-        return NSQ.prefs.applyStyleGlobals(style);
+        // Use site dialog settings if applicable.  See getZoomForBrowser()
+        // for explanation.
+        var siteDlg = NSQ.storage.dialogs.site;
+        if (siteDlg && siteDlg.site == site) {
+            if (this.isPrivate == isWindowPrivate(siteDlg.browser.contentWindow) &&
+                (!this.isPrivate || siteDlg.browser == browser))
+                return siteDlg.getStyle();
+        }
+        return NSQ.prefs.getStyleForSiteWithDefaults(site);
     };
 
     /* Returns CSS string for the given style object.
