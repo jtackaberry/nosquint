@@ -25,6 +25,7 @@ NoSquint.interfaces = NoSquint.ns(function() { with (NoSquint) {
         this.id = 'NoSquint.interfaces.ProgressListener';
         this.browser = browser;
         this.contentType = null;
+        this.attachTimeout = null;
     }
 
     this.ProgressListener.prototype = {
@@ -130,8 +131,8 @@ NoSquint.interfaces = NoSquint.ns(function() { with (NoSquint) {
                     else
                         this.styleApplied = true;
                 }
-            } else if (state & Components.interfaces.nsIWebProgressListener.STATE_IS_DOCUMENT &&
-                       this.browser.getUserData('nosquint').site == null && !is30()) {
+            } else if (state & Components.interfaces.nsIWebProgressListener.STATE_STOP && astatus &&
+                       this.attachTimeout == null) {
                 /* Kludge: when moving a tab from one window to another, the
                  * listener previously created and attached in
                  * NSQ.browser.attach() seems to either stop working or gets
@@ -141,7 +142,7 @@ NoSquint.interfaces = NoSquint.ns(function() { with (NoSquint) {
                  * the listener isn't working, NoSquint doesn't hear about it.
                  *
                  * The specific magical incantation to deal with this seems to
-                 * be handling STATE_IS_DOCUMENT when site=null.  After a 0ms
+                 * be handling STATE_STOP with a non-zero aStatus.  After a 0ms
                  * timer, we try to re-add this listener ('this').  If it
                  * fails, we assume the listener from attach() is still there
                  * and everything is cool after all.  Otherwise, regenerate the
@@ -154,7 +155,8 @@ NoSquint.interfaces = NoSquint.ns(function() { with (NoSquint) {
                  */
                 var browser = this.browser;
                 var listener = this;
-                setTimeout(function() {
+                this.attachTimeout = setTimeout(function() {
+                    listener.attachTimeout = null;
                     try {
                         browser.addProgressListener(listener);
                     } catch (err) {
