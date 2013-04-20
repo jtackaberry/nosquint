@@ -14,7 +14,7 @@ NoSquint.browser = NoSquint.ns(function() { with (NoSquint) {
 
     this.init = function() {
         this.gBrowser = gBrowser;
-        this.isPrivate = PrivateBrowsingUtils.isWindowPrivate(window);
+        this.isPrivate = isWindowPrivate();
         this.prefs = NSQ.prefs;
         this.updateZoomMenu();
 

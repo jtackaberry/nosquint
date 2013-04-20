@@ -12,7 +12,7 @@
  */
 
 NoSquint.prefs = NoSquint.ns(function() { with(NoSquint) {
-    this.isPrivate = PrivateBrowsingUtils.isWindowPrivate(window);
+    this.isPrivate = isWindowPrivate();
     if (!this.isPrivate) {
         // For non-private windows, namespace is a singleton, so return any
         // previously instantiated prefs object.

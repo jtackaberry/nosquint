@@ -47,6 +47,21 @@
         return doc.getElementById(id);
     };
 
+    this.isWindowPrivate = function(win) {
+        if (win === undefined)
+            win = window;
+        try {
+            return PrivateBrowsingUtils.isWindowPrivate(win);
+        } catch (e) {
+            // As per issue #73, for some unknown reason,
+            // PBU.isWindowPrivate() can throw NS_NOINTERFACE.  I have never
+            // been able to reproduce this on Linux, so perhaps this is
+            // platform specific.  In any case, just blindly catch exceptions
+            // thrown here and assume the window isn't private if it throws.
+            return false;
+        }
+    };
+
     // Loads a string bundle and returns a key -> value map.
     this.getStringBundle = function(name) {
         var bundle = Components.classes["@mozilla.org/intl/stringbundle;1"]
@@ -110,7 +125,7 @@
 
     // XXX: don't forget to disable this for releases.
     this.debug = function(msg) {
-        //dump("[nosquint] " + msg + "\n");
+        // dump("[nosquint] " + msg + "\n");
     };
 
     /* This function is called a lot, so we take some care to optimize for the
@@ -119,7 +134,7 @@
     this.isChrome = function(browser) {
         var document = browser.docShell.document;
 
-        //this.debug('isChrome(): URL=' + document.URL + ', spec=' + browser.currentURI.spec + ', contentType=' + document.contentType);
+        // this.debug('isChrome(): URL=' + document.URL + ', spec=' + browser.currentURI.spec + ', contentType=' + document.contentType);
         if (document.URL == undefined)
             return true;
 
@@ -160,12 +175,12 @@
         return doc.body ? doc.body.firstChild : null;
     };
 
-    this.foreachNSQ = (function() {
+    this.foreachNSQ = (function(self) {
         var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"]
                            .getService(Components.interfaces.nsIWindowMediator);
         return function(callback) {
             // For private windows, apply callback only to self.
-            if (PrivateBrowsingUtils.isWindowPrivate(window)) {
+            if (self.isWindowPrivate(window)) {
                 callback(this.NSQ);
                 return window;
             }
@@ -175,13 +190,13 @@
             var enumerator = wm.getEnumerator("navigator:browser");
             var win;
             while ((win = enumerator.getNext())) {
-                if (win.NoSquint && !PrivateBrowsingUtils.isWindowPrivate(win) &&
+                if (win.NoSquint && !self.isWindowPrivate(win) &&
                     callback(win.NoSquint) === false)
                     break;
             }
             return win;
         };
-    })();
+    })(this);
 
 
     this.popup = function(type, title, text, value) {
