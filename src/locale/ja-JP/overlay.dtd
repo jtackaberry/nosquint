@@ -1,0 +1,16 @@
+<!ENTITY ns.tooltip.site.label "サイト名">
+<!ENTITY ns.tooltip.fullZoom.label "フル ズーム">
+<!ENTITY ns.tooltip.textZoom.label "テキスト ズーム">
+<!ENTITY ns.tooltip.textColor.label "テキスト色">
+<!ENTITY ns.tooltip.linkColor.label "リンク色">
+
+<!ENTITY ns.menu.fullZoom.label "フル ズーム">
+<!ENTITY ns.menu.textZoom.label "テキスト ズーム">
+<!ENTITY ns.menu.reset.label "レベル リセット">
+<!ENTITY ns.menu.siteSettings.label "サイト設定">
+<!ENTITY ns.menu.globalSettings.label "グローバル設定">
+
+<!ENTITY ns.menu.context.label "NoSquint サイト設定">
+<!ENTITY ns.menu.context.accesskey "q">
+
+<!ENTITY ns.sanitize.label "NoSquint サイト履歴">
