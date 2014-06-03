@@ -4,6 +4,7 @@ overlay chrome://browser/content/preferences/sanitize.xul  chrome://nosquint/con
 overlay chrome://browser/content/sanitize.xul chrome://nosquint/content/overlay_sanitize.xul
 
 locale nosquint en-US ${JAR}locale/en-US/
+locale nosquint ja-JP ${JAR}locale/ja-JP/
 
 skin nosquint classic/1.0 ${JAR}skin/
 style chrome://global/content/customizeToolbar.xul chrome://nosquint/skin/toolbar.css
