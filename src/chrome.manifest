@@ -1,12 +1,11 @@
-content nosquint jar:chrome/nosquint.jar!/content/
+content nosquint content/
 overlay chrome://browser/content/browser.xul chrome://nosquint/content/overlay.xul
 overlay chrome://browser/content/preferences/sanitize.xul  chrome://nosquint/content/overlay_sanitize.xul
 overlay chrome://browser/content/sanitize.xul chrome://nosquint/content/overlay_sanitize.xul
 
-locale nosquint en-US jar:chrome/nosquint.jar!/locale/en-US/
-locale nosquint ja-JP jar:chrome/nosquint.jar!/locale/ja-JP/
+locale nosquint en-US locale/en-US/
 
-skin nosquint classic/1.0 jar:chrome/nosquint.jar!/skin/
+skin nosquint classic/1.0 skin/
 style chrome://global/content/customizeToolbar.xul chrome://nosquint/skin/toolbar.css
 
 component {d0d9afd9-ef86-46fe-8a39-87c44dbce919} components/about-handler.js
