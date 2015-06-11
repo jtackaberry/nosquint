@@ -43,9 +43,9 @@ NoSquint.dialogs.global = NoSquint.ns(function() { with (NoSquint) {
         for (let exc in iter(sortedExceptions))
             exc[0] = exc[0].replace(/%20/g, ' ');
         sortedExceptions.sort(function(a, b) {
-          if (a[0] < b[0]) { return -1; }
-          if (a[0] > b[0]) { return  1; }
-          return 0;
+            if (a[0] < b[0]) { return -1; }
+            if (a[0] > b[0]) { return  1; }
+            return 0;
         });
         for (let exc in iter(sortedExceptions))
             this.exceptionsListAdd(exc[0], false, -1);
