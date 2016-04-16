@@ -1,0 +1,53 @@
+<!ENTITY ns.pref.title "NoSquint グローバル設定">
+<!ENTITY ns.pref.tab.general.label " 一般 ">
+<!ENTITY ns.pref.tab.zooming.label " ズーム ">
+<!ENTITY ns.pref.tab.colors.label " 色 ">
+<!ENTITY ns.pref.tab.exceptions.label " 例外 ">
+
+<!ENTITY ns.pref.zooming.caption "既定のズーム設定">
+
+<!ENTITY ns.pref.zooming.primaryMethod.label "優先的なズーム方法">
+<!ENTITY ns.pref.zooming.primaryMethod.full "フル ページ ズーム (画像とテキスト)">
+<!ENTITY ns.pref.zooming.primaryMethod.text "テキスト ズーム (テキストのみ)">
+
+<!ENTITY ns.pref.zooming.fullLevel.label "既定のフル ページ ズーム レベル">
+<!ENTITY ns.pref.zooming.textLevel.label "既定のテキスト ズーム レベル">
+<!ENTITY ns.pref.zooming.increment.label "ズーム増加量">
+<!ENTITY ns.pref.zooming.images.label "Zoom standalone images to fit browser window">
+<!ENTITY ns.pref.zooming.mousewheel.label "Ctrl + マウス ホイールでズームを有効">
+<!ENTITY ns.pref.zooming.showstatus.label "現在のズーム レベルをステータス バーに表示">
+
+<!ENTITY ns.pref.persistence.caption "サイトごとの設定 (色とズーム)">
+<!ENTITY ns.pref.persistence.remember.label "Firefox を再起動してもサイトごとの設定を保存">
+<!ENTITY ns.pref.persistence.noRemember.label "Firefox を閉じたらすべてのサイトごとの設定を破棄">
+<!ENTITY ns.pref.persistence.forget.label "指定期間アクセスしていないサイトの設定は破棄">
+<!ENTITY ns.pref.persistence.forget.year "1年">
+<!ENTITY ns.pref.persistence.forget.6months "6ヶ月">
+<!ENTITY ns.pref.persistence.forget.3months "3ヶ月">
+<!ENTITY ns.pref.persistence.forget.month "1ヶ月">
+<!ENTITY ns.pref.persistence.sanitize.label "Firefox の履歴消去時に NoSquint のサイト履歴も消去">
+
+<!ENTITY ns.pref.colors.info "色の設定を有効にすると、以降のすべてのページの規定値を上書きします。">
+<!ENTITY ns.pref.colors.colors.caption "テキストと背景">
+<!ENTITY ns.pref.colors.colors.text.label "テキスト">
+<!ENTITY ns.pref.colors.colors.background.label "背景">
+<!ENTITY ns.pref.colors.colors.images.label "背景画像を無効化">
+<!ENTITY ns.pref.colors.links.caption "リンク色">
+<!ENTITY ns.pref.colors.links.unvisited.label "未表示">
+<!ENTITY ns.pref.colors.links.visited.label "表示済み">
+<!ENTITY ns.pref.colors.links.underline.label "常にリンクに下線を表示">
+
+
+<!ENTITY ns.pref.exceptions.info "例外は NoSquint が個別のサイトを識別する方法を制御するための高度な機能です。詳細は以下のヘルプ ボタンをクリックしてください。">
+
+<!ENTITY ns.pref.exceptions.pattern.label "新規例外パターン">
+<!ENTITY ns.pref.exceptions.copyButton.label "URL からコピー">
+<!ENTITY ns.pref.exceptions.copyButton.accesskey "C">
+<!ENTITY ns.pref.exceptions.addButton.label "例外を追加">
+<!ENTITY ns.pref.exceptions.addButton.accesskey "A">
+<!ENTITY ns.pref.exceptions.list.col1.label "例外パターン">
+<!ENTITY ns.pref.exceptions.editButton.label "例外を編集">
+<!ENTITY ns.pref.exceptions.editButton.accesskey "E">
+<!ENTITY ns.pref.exceptions.removeButton.label "例外を削除">
+<!ENTITY ns.pref.exceptions.removeButton.accesskey "R">
+

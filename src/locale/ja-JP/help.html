@@ -1,0 +1,385 @@
+<html>
+
+<style type="text/css">
+    body {
+        font-size: 110%;
+        padding: 0;
+        margin: 0;
+        text-align: justify;
+    }
+
+    ol {
+        text-align: left;
+    }
+
+    h2,h3 {
+        padding-left: 1em;
+    }
+
+    p,ol,li {
+        margin-left: 1em;
+        margin-right: 1.5em;
+    }
+
+    div.indent {
+        padding-left: 0.5em;
+    }
+
+    ul li b {
+        background-color: #eee;
+        padding: 0.2em;
+    }
+    ol li {
+        margin-bottom: 0.5em;
+    }
+
+    code {
+        font-size: 115%;
+        background-color: #fafafa;
+    }
+    h2 {
+        margin-top: 0.5em;
+        padding: 5px;
+        border-top: 1px solid #aaa;
+        border-bottom: 1px solid #aaa;
+        background-color: #f1f4fd;
+        font-family: sans-serif;
+    }
+    h3 {
+        font-family: sans-serif;
+    }
+
+</style>
+
+<body>
+<h2 id='general'>General Tab</h2>
+
+<p>To NoSquint, a site is a web location where all pages have the same zoom
+level and color settings, and the site name is derived from the page's URL.</p>
+
+<p>In most cases, the site is the domain.  For example, if the current page is
+<code>www2.ibm.com/index.php</code>, NoSquint will consider the site name to be
+<code>ibm.com</code>.  NoSquint will also take into account common country-specific
+second-level domains.  For example, if you're visiting
+<code>www.bbc.co.uk</code>, NoSquint will consider the site name to be
+<code>bbc.co.uk</code>.</p>
+
+<p>The default behaviour should work almost all the time.  When it doesn't, you
+can control how NoSquint determines site names in the 
+<a href='#exceptions'>Exceptions Tab</a>.</p>
+
+<h3>Per-site settings (color and zoom)</h3>
+<ul>
+    <li>
+        <b>Remember per-site settings between Firefox restarts</b>
+            <p>With this option selected, NoSquint will remember any changes
+            you make to the zoom levels and color choices for a given site, and
+            the changes are stored on disk so they can be applied even if you
+            restart Firefox.</p>
+            <p>Both full page zoom and text zoom levels are remembered
+            independently.  Next time you visit that site, NoSquint will use
+            the zoom and colors previously used on that site.</p>
+    </li>
+    <li>
+        <b>Forget settings for sites not visited in the last ...</b>
+            <p>With the "Remember per-site settings between Firefox restarts"
+            option enabled, NoSquint keeps track of all zoom level and color
+            changes for sites, even sites you only visit once.  This option is
+            house cleaning: if you haven't visited a site (for which you've set
+            a non-default zoom or color setting) for the specified number of
+            months, NoSquint will forget the setting.</p>
+    </li>
+    <li>
+        <b>Erase NoSquint site history when Firefox clears private data</b>
+            <p>When you change the default zoom levels or colors for a given
+            site, NoSquint remembers that change, which means it must keep a 
+            record of those sites.  From a privacy perspective, this is similar
+            to your browsing history.  If this option is selected, when Firefox
+            clears your private data (via Tools | Clear Private Data for Firefox
+            3.0, and Tools | Clear Recent History for Firefox 3.5), it will
+            also purge all site-specific data associated with NoSquint.</p>
+            <p>Note that user-added <a href='#exceptions'>exceptions</a> are
+            not cleared.</p>
+    </li>
+    <li>
+        <b>Forget all per-site settings when Firefox closes</b>
+            <p>Per-site settings will be retained only for the current Firefox
+            session.  They are never written to disk, and will therefore not
+            be remembered if you restart Firefox.</p>
+            <p>An alternative would be to use Firefox's Private Browsing mode
+            (Firefox 3.5 and later), which NoSquint supports.  When Private
+            Browsing is activated, even if "Remember per-site settings between
+            Firefox restarts" is selected instead of this option, NoSquint will
+            never store any per-site settings to disk which have changed while
+            in that mode.</p>
+    </li>
+</ul>
+
+<h2 id='zooming'>Zooming Tab</h2>
+
+<p>The options in this tab let you control the default zooming behavior as they
+apply to all sites.  You can override the zoom levels for individual sites using
+the Site Settings, which can be managed by left-clicking on NoSquint's status bar
+icon, or selecting NoSquint Site Settings from the page's context menu.</p>
+
+<h3>Default Zoom Options</h3>
+<ul>
+    <li>
+        <b>Primary zoom method</b>
+            <p>The primary zoom method specifies the behaviour of the standard
+            zoom adjustment shortcuts (ctrl-plus, ctrl-minus, ctrl-mousewheel).
+            With <code>Full Page Zoom</code>, both images and text will be zoomed;
+            with <code>Text Zoom</code>, only text is zoomed.  Whichever zoom method
+            is <i>not</i> set to be primary is referred to as the secondary method.</p>
+
+            <p>The shift key can be added to any of the shortcuts to control the
+            secondary zoom method.  For example, if the primary zoom method is
+            set to Full Page Zoom, and ctrl-shift-plus is pressed, only text size will
+            be increased.</p>
+    </li>
+            
+    <li>
+        <b>Default full page zoom level</b>
+            <p>This is the full page zoom level (affecting both images and
+            text) which will be applied to all pages by default.  A value of
+            100% is the standard Firefox zoom level without NoSquint.  With
+            NoSquint, you can override this value to be larger or smaller.</p>
+
+            <p>Modifying the full page zoom level when visiting a web page will
+            override this value for that site.</p>
+    </li>
+
+    <li>
+        <b>Default text-only zoom level</b>
+            <p>This is the text zoom level (affecting <i>only</i> text) which
+            will be applied to all pages by default.  A value of 100% is the
+            standard Firefox zoom level without NoSquint.  With NoSquint, you
+            can override this value to be larger or smaller.</p>
+
+            <p>Modifying the text zoom level when visiting a web page will
+            override this value for that site.</p>
+    </li>
+
+    <li>
+        <b>Zoom increment</b>
+            <p>You can change the zoom level for a page from the View menu, by
+            using one of the zoom shortcuts (ctrl-plus/minus or
+            ctrl-mousewheel), or by using the optional toolbar buttons.
+            NoSquint can remember these changes.  This setting specifies what
+            increment, in percent, to use when changing the zoom level.</p>
+    </li>
+    <li>
+        <b>Enable zoom with ctrl-mousewheel</b>
+            <p>Selecting this option allows you to adjust the zoom level by
+            pressing and holding the control key while moving the mousewheel up
+            or down.  If ctrl-shift-mousewheel is used, this controls the
+            secondary zoom method.</p>
+    </li>
+    <li>
+        <b>Show current zoom levels in status bar</b>
+            <p>Selecting this option shows the zoom levels (both full page and
+            text zoom) in the status bar for the current web page.  When
+            hovering over the status panel, a tooltip will appear providing
+            more information.</p>
+    </li>
+</ul>
+
+<h2 id='colors'>Colors Tab</h2>
+<p>Sometimes website creators choose to use rather questionable color choices
+which can significantly hinder readability.  NoSquint lets you override the
+standard text colors for <i>all</i> sites here.  Or (probably more usefully),
+you can modify per-site colors via the Site Settings, which can be managed by
+left-clicking on NoSquint's status bar icon, or selecting NoSquint Site
+Settings from the page's context menu.</p>
+
+<h3>Text and Background</h3>
+<ul>
+    <li>
+        <b>Text</b>
+            <p>Overrides the foreground color for all text on the page.</p>
+    </li>
+    <li>
+        <b>Background</b>
+            <p>Overrides the background color for the page.</p>
+    </li>
+    <li>
+        <b>Disable background images</b>
+            <p>Some sites may overlay text on background images, rendering the
+            user-selected background color (above) ineffective.  You can disable
+            those images by selecting this options.</p>
+    </li>
+</ul>
+
+<h3>Link Colors</h3>
+<ul>
+    <li>
+        <b>Unvisited</b>
+            <p>The foreground text color to use for all links that have not been visited before.</p>
+    </li>
+    <li>
+        <b>Visited</b>
+            <p>The foreground text color to use for all links that <i>have</i> been visited before.</p>
+    </li>
+    <li>
+        <b>Always underline links</b>
+            <p>Some websites make it difficult to tell the difference between links and regular text.
+            Selecting this option will force hyperlinks to always be underlined.</p>
+    </li>
+</ul>
+
+
+<h2 id='exceptions'>Exceptions Tab</h2>
+
+<p>Because not all web sites are structured the same, sometimes the default
+logic NoSquint uses to determine the site name doesn't work the way you want it
+to.  Using exceptions, you can control how NoSquint determines what constitutes
+a separate site.</p>
+
+<h3>Use Cases</h3>
+<p>Exceptions are powerful and expressive, and unfortunately can be confusing.
+They are specified using a simple custom grammar, <i>not</i> regular
+expressions.  Before going into a detailed explanation, let's first examine
+some common use-cases.  Hopefully one of these examples applies to your
+case.</p>
+
+<ol>
+    <li>
+        <b>Problem:</b> different subdomains on SourceForge, e.g.
+        <code>freevo.sourceforge.net</code> and
+        <code>audacity.sourceforge.net</code>, are wrongly treated as the same
+        site (<code>sourceforge.net</code>)<br />
+
+        <b>Solution:</b> add an exception with the pattern
+        <code>*.sourceforge.net</code>
+    </li>
+
+    <li>
+        <b>Problem:</b> <code>example.com/users/mary</code> and
+        <code>example.com/users/john</code> are wrongly treated as the same
+        site (<code>example.com</code>)<br />
+
+        <b>Solution:</b> add an exception with the pattern
+        <code>example.com/users/*</code>
+    </li>
+
+    <li>
+        <b>Problem:</b> I use Google Mail (<code>mail.google.com</code>) and
+        Google Reader (<code>google.com/reader</code>) and would like these
+        treated as sites separate from <code>google.com</code><br />
+
+        <b>Solution:</b> add an exception with the pattern
+        <code>mail.google.com</code>; add another exception with the pattern
+        <code>google.com/reader</code>
+    </li>
+
+    <li>
+        <b>Problem:</b> my company's intranet is at
+        <code>intra.example.com</code>, but I'd like our wiki, located under
+        <code>intra.example.com/wiki</code> to be treated separately from the
+        rest of the intranet.<br />
+
+        <b>Solution:</b> add an exception with the pattern
+        <code>intra.example.com/wiki</code>
+    </li>
+
+    <li>
+        <b>Problem:</b> Google Mail, Google Groups, and in fact all hosts on
+        Google should be treated as separate sites.  But the country (the
+        top-level domain) shouldn't matter.  So <code>mail.google.ca</code>
+        should be the same site as <code>mail.google.de</code>, but a different
+        site from <code>groups.google.de</code>, which itself would be the same
+        site as <code>groups.google.fi</code><br />
+
+        <b>Solution:</b> add an exception with the pattern <code>*.google.[*]</code>
+    </li>
+
+    <li>
+        <b>Problem:</b> my company has several web applications that are
+        distributed across multiple servers.
+        <code>example.com/server1/apps/app1</code> should be considered the
+        same site as <code>example.com/server2/apps/app1</code>, but there
+        could also be <code>example.com/server1/apps/app3</code> that should be
+        a separate site.<br />
+
+        <b>Solution:</b> add an exception with the pattern
+        <code>example.com/[*]/apps/*</code>
+    </li>
+    <li>
+        <b>Problem:</b> same scenario as the previous one, but sometimes the
+        server isn't in the URL, so <code>example.com/apps/app1</code> is
+        the same site as <code>example.com/server1/apps/app1</code>.<br/>
+
+        <b>Solution:</b> add an exception with the pattern
+        <code>example.com/[**]apps/*</code>
+    </li>
+</ol>
+
+<h3>Gory Details</h3>
+<p>What follows is a technical explanation of exceptions.  If you're not an
+advanced user, this section may create a fair amount of confusion; refer
+instead to the use-cases above to follow by example.</p>
+
+<p>Exception patterns may contain zero or more of the following possible wildcards:
+<ul>
+    <li>
+        <code>*</code> &ndash; When included in the host name, matches any character
+        except a dot ('.').  When included in the path, matches any character
+        except a slash ('/').  Does not match the empty string.
+    </li>
+    <li>
+        <code>**</code> &ndash; Matches any sequence of characters.  Does match
+        the empty string.
+    </li>
+</ul>
+</p>
+
+<p>Site names are arbitrary strings that represent a given site and are
+computed by NoSquint based on the current page's URL and the user-defined list
+of exceptions.  For instance, both <code>foo.example.com</code> and
+<code>myapp.*.example.com</code> could be site names, depending on the
+exceptions defined.  NoSquint looks up zoom levels based on the site name.  The
+site name, as determined by NoSquint, can be viewed in the tooltip by hovering
+over the magnifying glass in the status bar, or by opening the Site Settings
+dialog by left clicking the magnifying glass in the status bar.</p>
+
+<p>When a wildcard is enclosed in square brackets (i.e. <code>[*]</code> or
+<code>[**]</code>), the literal wildcard (<code>*</code> or <code>**</code>)
+will be used in the site name instead of the characters the wildcard matches.
+This is allows you to group together locations.  For example, if the page's URL
+is <code>google.ca</code> and you've defined an exception
+<code>google.[*]</code>, the site name will be <code>google.*</code>.  Since
+<code>google.fi</code> matches this pattern, the site name would also be
+<code>google.*</code>.  Therefore, <code>google.ca</code> and
+<code>google.fi</code> would be considered the same site.</p>
+
+<p>Hostnames and paths are evaluated separately; an exception pattern is split
+into two sub-patterns, one for the host, and one for the path.  These
+sub-patterns match substrings, but hosts are right-anchored, while paths are
+left-anchored.  This means that any wildcards specified in the host name will
+not match any characters in the path, and vice versa.  When the hostname part
+of a pattern is only <code>*</code>, it matches the domain of the page's URL.
+For example, for <code>www.google.com</code>, a single <code>*</code> matches
+<code>google.com</code>; for <code>www.bbc.co.uk</code> it matches
+<code>bbc.co.uk</code>.</p>
+
+<p>Hostname parts can optionally contain a port number, which is delimited from
+the hostname with a <code>:</code> (colon).  For example, <code>*:8080</code> will
+cause port 8080 for all domains to be treated separately, so that
+<code>www.example.com</code> is considered a different site than
+<code>www.example.com:8080</code> (but, assuming no other exceptions than
+this, <code>www.example.com:8001</code> is still considered the same site
+as <code>www.example.com</code> or <code>www.example.com:4242</code>).</p>
+
+<p>Any exception whose host part is the null string &ndash; in other words, the
+exception begins with a <code>/</code> (front slash) &ndash; is applied only to
+<code>file://</code> URLs.  So the exception <code>/home/*</code> for Linux or
+<code>/C:/Users/*</code> for Windows Vista causes all home directories to be
+treated distinctly from one another.</p>
+
+<p>When multiple exception patterns match a page's URL, NoSquint will use the
+exception that matches the most non-wildcard characters in the host name.  If
+there are still multiple exceptions in that narrowed list, the exception that
+matches the most non-wildcard characters in the path is then chosen.  If still
+there are multiple exceptions, the first one that matched is chosen.</p>
+</body>
+</html>

@@ -1,0 +1,7 @@
+<!ENTITY ns.pref.title "NoSquint サイト設定">
+<!ENTITY ns.pref.button.global.label "グローバル設定">
+<!ENTITY ns.pref.button.global.accesskey "G">
+
+<!ENTITY ns.pref.fullZoom.label "フル ズーム レベル">
+<!ENTITY ns.pref.textZoom.label "テキスト ズーム レベル">
+<!ENTITY ns.pref.button.useDefault.label "規定値を使用">
