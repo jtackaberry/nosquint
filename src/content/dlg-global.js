@@ -39,8 +39,16 @@ NoSquint.dialogs.global = NoSquint.ns(function() { with (NoSquint) {
 
         // Exceptions tab
         $('copyURL-button').style.display = this.url ? '' : 'none';
-        for (let exc in iter(NSQ.prefs.exceptions))
-            this.exceptionsListAdd(exc[0].replace(/%20/g, ' '), false);
+        var sortedExceptions = NSQ.prefs.exceptions;
+        for (let exc in iter(sortedExceptions))
+            exc[0] = exc[0].replace(/%20/g, ' ');
+        sortedExceptions.sort(function(a, b) {
+            if (a[0] < b[0]) { return -1; }
+            if (a[0] > b[0]) { return  1; }
+            return 0;
+        });
+        for (let exc in iter(sortedExceptions))
+            this.exceptionsListAdd(exc[0], false, -1);
         $('exceptionsList').setUserData('nosquint.changed', false, null);
         this.excListSelect();
     };
@@ -161,12 +169,12 @@ NoSquint.dialogs.global = NoSquint.ns(function() { with (NoSquint) {
      * Exceptions tab functions
      */
 
-    this.exceptionsListAdd = function(pattern, check_dupe) {
+    this.exceptionsListAdd = function(pattern, manual_add, insert_before) {
         var listbox = $('exceptionsList');
         // Strip URI scheme from pattern (if it exists)
         pattern = pattern.replace(/^\w+:\/\//, '');
 
-        if (check_dupe) {
+        if (manual_add) {
             for (let node in iter(listbox.childNodes)) {
                 if (node.childNodes[0].getAttribute('label') == pattern)
                     return;
@@ -178,7 +186,26 @@ NoSquint.dialogs.global = NoSquint.ns(function() { with (NoSquint) {
         var li1 = document.createElement("listcell");
         li1.setAttribute('label', pattern);
         node.appendChild(li1);
-        listbox.appendChild(node);
+
+        if (insert_before == -1)   // insert at end
+        {
+            listbox.appendChild(node);
+        }
+        else {
+            var items = listbox.childNodes;
+            if (insert_before >= 0 && insert_before < items.length) {
+                listbox.insertBefore(node, items.item(insert_before));
+            }
+            else {
+                console.error("insert_before value " + insert_before + " is out of the listbox bounds! Item '" + pattern + "' has not been added.");
+                return;
+            }
+        }
+        if (manual_add) {
+            listbox.ensureElementIsVisible(node);
+            listbox.selectItem(node);
+        }
+
         node.addEventListener('dblclick', function() NSQ.dialogs.global.buttonEditException(), false);
         // Mark the listbox as having been changed from stored prefs.
         listbox.setUserData('nosquint.changed', true, null);
@@ -221,7 +248,22 @@ NoSquint.dialogs.global = NoSquint.ns(function() { with (NoSquint) {
     };
 
     this.buttonAddException = function() {
-        this.exceptionsListAdd($('pattern').value, true);
+        // Since the listbox should always be sorted already, we can simply scan to see where to add the new one.
+        var listbox = $('exceptionsList');
+        var value = $('pattern').value;
+        var children = listbox.childNodes;
+        var insertbefore = -1;
+        for (var i = 0; i < children.length; i++) {
+            var item = children.item(i);
+            if (item.nodeName == "listitem") {
+                var label = item.childNodes.item(0).getAttribute("label");
+                if (label > value) {
+                    insertbefore = i;
+                    break;
+                }
+            }
+        }
+        this.exceptionsListAdd(value, true, insertbefore);
         $('pattern').value = '';
         this.textPatternChange();
     };
